@@ -17,7 +17,7 @@ from email.header import Header
 
 # Set page config for web app
 st.set_page_config(
-    page_title="情緒觀察營 — 申報與管理平台 (權限分流版)",
+    page_title="情緒觀察營 — 週總結回報平台 ",
     page_icon="🌟",
     layout="wide",
     initial_sidebar_state="expanded"
