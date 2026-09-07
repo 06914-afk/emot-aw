@@ -1107,7 +1107,7 @@ elif not is_authenticated:
         )
         
         st.write("---")
-        st.markdown('<div class="reminder-template" style="font-family: inherit; font-size: 1rem; line-height: 1.5;">💡 <b>溫馨提醒：</b>每週六晚上11:00為報截止，可養成習慣總結。麻煩組長在週日中午產生組內報告回傳給帶組法師。</div>', unsafe_allow_html=True)
+        st.markdown('<div class="reminder-template" style="font-family: inherit; font-size: 1rem; line-height: 1.5;">💡 <b>溫馨提醒：</b>每週六晚上11:00回報截止，可養成習慣總結。麻煩組長在週日中午產生組內報告回傳給帶組法師。</div>', unsafe_allow_html=True)
         st.write("---")
         student_email_val = st.text_input("📧 您的電子郵件 (選填，填寫後送出可自動收到填報確認信副本)", placeholder="username@gmail.com", key="student_email_input")
         
