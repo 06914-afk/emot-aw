@@ -586,11 +586,41 @@ def normalize_week_string(raw_str, official_weeks):
 
 selectable_weeks = get_available_weeks(weeks_list)
 
+def get_week_dates(wk_str):
+    match = re.search(r'(\d{4}/\d{2}/\d{2})\s*~\s*(\d{4}/\d{2}/\d{2})', str(wk_str))
+    if match:
+        s_date = datetime.datetime.strptime(match.group(1), '%Y/%m/%d').date()
+        e_date = datetime.datetime.strptime(match.group(2), '%Y/%m/%d').date()
+        return s_date, e_date
+    return None, None
+
 def get_default_week_index(selectable_wks):
     """
-    v52: 靜態選單模式 - 預設回歸第一個選項 (Index 0, 即 W1)。
+    v56 動態預設週次引導：
+    - 週日(6)至週五(4)開啟頁面時，自動預設顯示「上一週」資訊 (例如 9/13 週日 -> W2)。
+    - 週六(5)開啟頁面時，預設顯示「當前週次」資訊 (例如 9/19 週六 -> W3)。
     """
-    return 0
+    try:
+        today = datetime.datetime.now(pytz.timezone('Asia/Taipei')).date()
+        curr_idx = 0
+        for idx, wk_str in enumerate(selectable_wks):
+            s_date, e_date = get_week_dates(wk_str)
+            if s_date and e_date:
+                if s_date <= today <= e_date:
+                    curr_idx = idx
+                    break
+                elif today > e_date:
+                    curr_idx = idx
+        
+        weekday = today.weekday() # 0=Mon, 1=Tue, 2=Wed, 3=Thu, 4=Fri, 5=Sat, 6=Sun
+        if weekday in [6, 0, 1, 2, 3, 4]:
+            target_idx = max(0, curr_idx - 1)
+        else:
+            target_idx = curr_idx
+            
+        return target_idx
+    except Exception:
+        return 0
 
 
 default_week_idx = get_default_week_index(selectable_weeks)
@@ -659,8 +689,8 @@ def load_data():
     return pd.DataFrame(columns=[
         "時間戳記", "組別", "保溫組長", "個人姓名", "電子郵件", 
         "個人編號", "性別", "當週回報期間", "當週填表張數", 
-        "累積填表張數", "本週組內共學", "心得或對法師提問",
-        "最常出現的身體反應", "最常出現的情緒類別", "最常用的落地方式"
+        "累積填表張數", "心得或對法師提問", "最常出現的身體反應", 
+        "最常出現的情緒類別", "最常用的落地方式", "本週組內共學"
     ])
 
 # Function to save record (local + cloud try)
@@ -680,12 +710,12 @@ def save_record(new_row, gas_url=""):
         try:
             response = requests.post(gas_url.strip(), json=new_row, timeout=8)
             if response.status_code == 200:
-                return True, "本機備份成功，且順利同步寫入 Google 雲端！"
+                return True, "成功"
             else:
-                return True, f"本機備份成功，但雲端同步失敗 (狀態碼: {response.status_code})"
+                return True, f"本機已儲存，雲端同步狀態: {response.status_code}"
         except Exception as e:
-            return True, f"本機備份成功，但雲端同步發生錯誤: {str(e)}"
-    return True, "填報紀錄已成功儲存於本地伺服器。"
+            return True, f"本機已儲存 (雲端連線異常)"
+    return True, "成功"
 
 # Define passwords for group leaders (leader01 ~ leader18) and admin (admin2026)
 leader_passwords = {f"第 {i} 組": f"leader{i:02d}" for i in range(1, 19)}
@@ -1726,7 +1756,7 @@ elif not is_authenticated:
         <div class="success-box">
             <h3 style="margin-top: 0; color: #0F5132;">🎉 提交成功！</h3>
             <p>感謝 <b>{st.session_state.get('last_submitted_name', '')}</b> 的回報！您的填表紀錄已妥善儲存。</p>
-            <p>💡 {st.session_state.get('last_submitted_msg', '')}</p>
+            {f'<p>💡 {st.session_state.get("last_submitted_msg")}</p>' if st.session_state.get('last_submitted_msg') else ''}
             <ul>
                 <li><b>個人編號：</b>{st.session_state.get('last_submitted_id', '')}</li>
                 <li><b>回報期間：</b>{st.session_state.get('last_submitted_period', '')}</li>
@@ -2184,11 +2214,11 @@ elif not is_authenticated:
                 "當週回報期間": period,
                 "當週填表張數": int(weekly_sheets),
                 "累積填表張數": int(cum_sheets),
-                "本週組內共學": "是" if co_learn else "否",
                 "心得或對法師提問": feedback.strip() if feedback.strip() else "無",
                 "最常出現的身體反應": body_reactions.strip() if body_reactions.strip() else "無",
                 "最常出現的情緒類別": emotion_types.strip() if emotion_types.strip() else "無",
-                "最常用的落地方式": grounding_methods.strip() if grounding_methods.strip() else "無"
+                "最常用的落地方式": grounding_methods.strip() if grounding_methods.strip() else "無",
+                "本週組內共學": "是" if co_learn else "否"
             }
             
             success, msg = save_record(new_row, gas_url=gas_api_url)
@@ -2202,11 +2232,11 @@ elif not is_authenticated:
                     else:
                         email_status_msg = f" ⚠️ 填報成功，但副本發送失敗：{email_msg}"
                 else:
-                    email_status_msg = " 💡 (提示：填寫您的真實電子郵件，下次送出即可自動收到填報副本確認信喔！)"
+                    email_status_msg = ""
                 
                 st.session_state["submitted_successfully"] = True
                 st.session_state["last_submitted_name"] = actual_name
-                st.session_state["last_submitted_msg"] = msg + email_status_msg
+                st.session_state["last_submitted_msg"] = email_status_msg if email_status_msg else ("" if msg == "成功" else msg)
                 st.session_state["last_submitted_id"] = auto_member_id
                 st.session_state["last_submitted_period"] = period
                 st.session_state["last_submitted_co_learn"] = "是" if co_learn else "否"
