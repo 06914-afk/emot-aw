@@ -110,21 +110,47 @@ st.markdown("""
         box-shadow: 1px 3px 10px rgba(142, 167, 186, 0.1);
     }
 
-    /* v23 修正：調整 Streamlit 按鈕與匯出下載按鈕，使其統一符合精美水彩綠色調，避免下載按鈕呈灰色/黑色 */
-    div.stButton > button, div.stDownloadButton > button {
-        background-color: #A65B6F !important; /* 水彩綠 */
-        color: white !important;
+    /* 🌸 v59 按鈕文字顏色優化：確保所有按鈕 (Primary / Secondary / 下載鈕 / 登入鈕) 之文字皆為高對比白字，絕不與咖啡粉底色重疊 */
+    button, 
+    div.stButton > button, 
+    div.stDownloadButton > button,
+    button[data-testid="baseButton-primary"], 
+    button[data-testid="baseButton-secondary"],
+    div[data-baseweb="button"] {
+        background-color: #8D4E5B !important; /* 典雅玫瑰咖啡粉底 */
+        color: #FFFFFF !important; /* 純白字，極度清晰高對比 */
         border-radius: 20px !important;
-        border: none !important;
-        box-shadow: 1px 3px 8px rgba(143, 168, 147, 0.25) !important;
+        border: 1px solid #7A3E4D !important;
+        box-shadow: 1px 3px 8px rgba(141, 78, 91, 0.25) !important;
         transition: all 0.3s ease !important;
         font-weight: bold !important;
         padding: 0.5rem 1.5rem !important;
     }
-    div.stButton > button:hover, div.stDownloadButton > button:hover {
-        background-color: #8E4455 !important;
-        box-shadow: 1px 4px 12px rgba(118, 144, 123, 0.35) !important;
+    
+    button p, button span, 
+    div.stButton > button p, div.stButton > button span,
+    div.stDownloadButton > button p, div.stDownloadButton > button span,
+    button[data-testid="baseButton-primary"] p, button[data-testid="baseButton-primary"] span,
+    button[data-testid="baseButton-secondary"] p, button[data-testid="baseButton-secondary"] span {
+        color: #FFFFFF !important;
+        font-weight: bold !important;
+    }
+
+    button:hover, 
+    div.stButton > button:hover, 
+    div.stDownloadButton > button:hover,
+    button[data-testid="baseButton-primary"]:hover, 
+    button[data-testid="baseButton-secondary"]:hover,
+    div[data-baseweb="button"]:hover {
+        background-color: #723C4A !important;
+        color: #FFE6EA !important;
+        box-shadow: 1px 4px 12px rgba(114, 60, 74, 0.35) !important;
         transform: translateY(-1px) !important;
+    }
+    
+    button:hover p, button:hover span,
+    div.stButton > button:hover p, div.stButton > button:hover span {
+        color: #FFE6EA !important;
     }
 
     /* 頁面展開區塊 Header 圓角與大方背景，杜絕重疊字 */
@@ -2601,7 +2627,11 @@ elif role == "📊 總窗口後台管理":
             st.write(f"📂 顯示篩選結果：共 {len(filtered_df)} 筆紀錄")
             
             # 💡 v35 調整：改至數據預覽表格上方，方便總窗口一秒匯出，且下方表格已加上視窗滾動條防拉伸
-            csv_data = filtered_df.to_csv(index=False, encoding='utf-8-sig')
+            # 💡 v59 修正：清除內部換行符號，防止 Excel 開啟時將換行誤判為多餘欄位 (欄位過多)
+            clean_export_df = filtered_df.copy()
+            for col in clean_export_df.select_dtypes(include=['object']):
+                clean_export_df[col] = clean_export_df[col].astype(str).str.replace(r'[\r\n]+', ' ', regex=True)
+            csv_data = clean_export_df.to_csv(index=False, encoding='utf-8-sig')
             st.download_button(
                 label="📥 匯出並下載全局 CSV 報表 (可用 Excel 直接開啟)",
                 data=csv_data,
