@@ -31,14 +31,14 @@ st.markdown("""
 <style>
     /* 全域清新水彩漸層背景與精緻字型 */
     html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
-        background-color: #F6FAF4 !important;
-        background-image: linear-gradient(135deg, #F3F8F2 0%, #FAF5EF 100%) !important;
+        background-color: #FAF0F2 !important;
+        background-image: linear-gradient(135deg, #FAF0F2 0%, #F5EBE6 100%) !important;
     }
     
     /* 調整字型與主要內文顏色 (移除 span 以避免破壞 Streamlit Chevron 箭頭與排版) */
     .stApp, p, label, li {
         font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif !important;
-        color: #2E4436 !important; /* 深森林綠，確保手機上文字高度可讀 */
+        color: #3E2723 !important; /* 深森林綠，確保手機上文字高度可讀 */
     }
 
     /* 網頁大標題：清新優雅水彩風 */
@@ -46,7 +46,7 @@ st.markdown("""
         font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
         font-size: 2.3rem;
         font-weight: 800;
-        color: #3C6E47; /* 溫和的水彩葉綠色 */
+        color: #8D4E5B; /* 溫和的水彩葉綠色 */
         text-align: center;
         margin-top: 15px;
         margin-bottom: 8px;
@@ -56,7 +56,7 @@ st.markdown("""
     .report-subtitle {
         font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
         font-size: 1.1rem;
-        color: #7A695A; /* 柔和的泥土暖褐 */
+        color: #6D4C41; /* 柔和的泥土暖褐 */
         text-align: center;
         margin-bottom: 30px;
         letter-spacing: 0.05em;
@@ -64,11 +64,11 @@ st.markdown("""
     
     /* 提示區塊：淡淡的水彩綠葉底色 + 柔和左邊框 */
     .group-box {
-        background-color: #EBF3EC !important;
-        color: #2E5638 !important;
+        background-color: #F8E8E9 !important;
+        color: #4A2E35 !important;
         padding: 16px;
         border-radius: 12px;
-        border-left: 6px solid #8FA893 !important; /* 柔軟水彩綠 */
+        border-left: 6px solid #A65B6F !important; /* 柔軟水彩綠 */
         box-shadow: 2px 4px 15px rgba(143, 168, 147, 0.12);
         margin-bottom: 25px;
         font-size: 1.05rem;
@@ -76,22 +76,22 @@ st.markdown("""
     
     /* 提交成功區塊：粉嫩花瓣綠意感 */
     .success-box {
-        background-color: #F0F6F2 !important;
-        color: #2A4D3B !important;
+        background-color: #FAF0F2 !important;
+        color: #3E2723 !important;
         padding: 22px;
         border-radius: 14px;
-        border: 1px solid #D5E5DE !important;
+        border: 1px solid #E8C4CB !important;
         box-shadow: 3px 6px 18px rgba(47, 82, 62, 0.08);
         margin-top: 15px;
     }
     
     /* LINE 關懷與郵件範本：微風暖沙水彩調 */
     .reminder-template {
-        background-color: #FCF5EC !important;
-        color: #6D5144 !important;
+        background-color: #FDF8F3 !important;
+        color: #4A3525 !important;
         padding: 18px;
         border-radius: 10px;
-        border-left: 5px solid #E2A784 !important; /* 柔粉橘 */
+        border-left: 5px solid #8D5B4C !important; /* 柔粉橘 */
         font-family: monospace;
         white-space: pre-wrap;
         margin-top: 10px;
@@ -99,11 +99,11 @@ st.markdown("""
     }
     
     .email-box {
-        background-color: #F1F5F9 !important;
-        color: #3B4B5E !important;
+        background-color: #FAF2F4 !important;
+        color: #3E2723 !important;
         padding: 15px;
         border-radius: 10px;
-        border-left: 5px solid #8EA7BA !important; /* 水彩天藍 */
+        border-left: 5px solid #B06C79 !important; /* 水彩天藍 */
         font-family: monospace;
         white-space: pre-wrap;
         margin-top: 10px;
@@ -112,7 +112,7 @@ st.markdown("""
 
     /* v23 修正：調整 Streamlit 按鈕與匯出下載按鈕，使其統一符合精美水彩綠色調，避免下載按鈕呈灰色/黑色 */
     div.stButton > button, div.stDownloadButton > button {
-        background-color: #8FA893 !important; /* 水彩綠 */
+        background-color: #A65B6F !important; /* 水彩綠 */
         color: white !important;
         border-radius: 20px !important;
         border: none !important;
@@ -122,7 +122,7 @@ st.markdown("""
         padding: 0.5rem 1.5rem !important;
     }
     div.stButton > button:hover, div.stDownloadButton > button:hover {
-        background-color: #76907B !important;
+        background-color: #8E4455 !important;
         box-shadow: 1px 4px 12px rgba(118, 144, 123, 0.35) !important;
         transform: translateY(-1px) !important;
     }
@@ -137,9 +137,9 @@ st.markdown("""
     }
     
     div[data-testid="stExpander"] details summary {
-        background-color: #FAF5EF !important;
+        background-color: #F5EBE6 !important;
         border-radius: 10px !important;
-        color: #2E4436 !important;
+        color: #3E2723 !important;
         padding: 12px 18px !important;
         font-weight: bold !important;
     }
@@ -147,9 +147,9 @@ st.markdown("""
     /* 確保輸入框、文字區域、下拉選單均使用純白底、深綠字，絕無黑底，高對比度 */
     input[type="text"], input[type="password"], input[type="number"], textarea, select {
         background-color: #FFFFFF !important;
-        color: #2E4436 !important;
+        color: #3E2723 !important;
         border-radius: 8px !important;
-        border: 1px solid #D5E5DE !important;
+        border: 1px solid #E8C4CB !important;
     }
     
     /* 下拉選單主體 */
@@ -162,12 +162,12 @@ st.markdown("""
     div[data-baseweb="select"] div[data-testid="stMarkdownContainer"] p,
     div[data-baseweb="select"] div,
     div[data-baseweb="select"] span {
-        color: #2E4436 !important;
+        color: #3E2723 !important;
     }
     
     /* 當焦點在輸入框或文字區時的文字與背景 */
     input:focus, textarea:focus {
-        color: #2E4436 !important;
+        color: #3E2723 !important;
         background-color: #FFFFFF !important;
     }
 
@@ -181,14 +181,14 @@ st.markdown("""
     /* 懸浮清單與單個選項 */
     ul[role="listbox"], li[role="option"] {
         background-color: #FFFFFF !important;
-        color: #2E4436 !important;
+        color: #3E2723 !important;
     }
 
     /* 確保側邊欄（Sidebar）在任何模式下都是溫暖的水彩粘土白，而非黑/深灰色 */
     section[data-testid="stSidebar"], [data-testid="stSidebarUserContent"], div[data-testid="stSidebarCollapseButton"] {
-        background-color: #FAF5EF !important;
-        background-image: linear-gradient(180deg, #F3F8F2 0%, #FAF5EF 100%) !important;
-        color: #2E4436 !important;
+        background-color: #F5EBE6 !important;
+        background-image: linear-gradient(180deg, #FAF0F2 0%, #F5EBE6 100%) !important;
+        color: #3E2723 !important;
     }
     section[data-testid="stSidebar"] p, 
     section[data-testid="stSidebar"] span, 
@@ -196,26 +196,26 @@ st.markdown("""
     section[data-testid="stSidebar"] h1, 
     section[data-testid="stSidebar"] h2, 
     section[data-testid="stSidebar"] h3 {
-        color: #2E4436 !important;
+        color: #3E2723 !important;
     }
 
     /* 確保表格 Dataframe 在任何模式下皆為白色背景與深色文字，全置中對齊防看錯行 */
     div[data-testid="stTable"] table, div[data-testid="stDataFrame"] table {
         background-color: #FFFFFF !important;
-        color: #2E4436 !important;
+        color: #3E2723 !important;
         border-collapse: separate !important;
         border-spacing: 0 !important;
         width: 100% !important;
     }
     div[data-testid="stTable"] th, div[data-testid="stDataFrame"] th {
-        background-color: #EBF3EC !important;
-        color: #1B5E20 !important;
+        background-color: #F8E8E9 !important;
+        color: #8D4E5B !important;
         text-align: center !important; /* 標頭置中對齊 */
         vertical-align: middle !important;
     }
     div[data-testid="stTable"] td, div[data-testid="stDataFrame"] td {
         background-color: #FFFFFF !important;
-        color: #2E4436 !important;
+        color: #3E2723 !important;
         border-top: 1px solid #EAE0D5 !important; /* 補上頂底邊框線防止 separate 模式下邊框不見 */
         border-bottom: 1px solid #EAE0D5 !important;
         text-align: center !important; /* 數據置中對齊，防手機上看錯行 */
@@ -252,7 +252,7 @@ st.markdown("""
         border-collapse: separate !important;
         border-spacing: 0 !important;
         background-color: #FFFFFF !important;
-        color: #2E4436 !important;
+        color: #3E2723 !important;
         font-size: 0.95rem;
     }
     /* 保持表頭固定在頂部 */
@@ -264,18 +264,18 @@ st.markdown("""
         z-index: 99 !important; /* 確保在滾動時絕對壓在下方資料之上 */
     }
     .scroll-table-container th {
-        background-color: #EBF3EC !important;
-        color: #1B5E20 !important;
+        background-color: #F8E8E9 !important;
+        color: #8D4E5B !important;
         text-align: center !important;
         vertical-align: middle !important;
         padding: 10px 15px !important;
         font-weight: bold !important;
-        box-shadow: 0 1px 0 #D5E5DE, 0 2px 4px rgba(0,0,0,0.04) !important; /* 加上下分割陰影 */
+        box-shadow: 0 1px 0 #E8C4CB, 0 2px 4px rgba(0,0,0,0.04) !important; /* 加上下分割陰影 */
         border: none !important;
     }
     .scroll-table-container td {
         background-color: #FFFFFF !important;
-        color: #2E4436 !important;
+        color: #3E2723 !important;
         border-top: 1px solid #EAE0D5 !important;
         border-bottom: 1px solid #EAE0D5 !important;
         text-align: center !important;
@@ -285,13 +285,13 @@ st.markdown("""
 
     /* 確保 Metric 數據指標卡片也有高對比度深色文字與白/淺色底色，在任何情況下都不會呈現黑底 */
     div[data-testid="stMetricValue"] > div {
-        color: #1B5E20 !important; /* 清新綠數字 */
+        color: #8D4E5B !important; /* 清新綠數字 */
     }
     div[data-testid="stMetricLabel"] > div {
-        color: #7A695A !important; /* 泥土腳標題 */
+        color: #6D4C41 !important; /* 泥土腳標題 */
     }
     div[data-testid="stMetric"] {
-        background-color: #FAF5EF !important;
+        background-color: #F5EBE6 !important;
         border-radius: 12px !important;
         padding: 12px !important;
         border: 1px solid #EAE0D5 !important;
@@ -305,20 +305,20 @@ st.markdown("""
     div[data-testid="stCodeBlock"] code,
     div[data-testid="stCodeBlock"] span,
     code, pre {
-        background-color: #FAF5EF !important;
-        color: #2E4436 !important;
+        background-color: #F5EBE6 !important;
+        color: #3E2723 !important;
         border-radius: 8px !important;
         border: 1px solid #EAE0D5 !important;
     }
 
     /* v22 新增：強制 Multiselect 選項標籤 (Tag/Chip) 在暗黑模式下為淺底深綠字，杜絕黑底 */
     div[data-baseweb="tag"] {
-        background-color: #EBF3EC !important;
-        color: #2E4436 !important;
-        border: 1px solid #D5E5DE !important;
+        background-color: #F8E8E9 !important;
+        color: #3E2723 !important;
+        border: 1px solid #E8C4CB !important;
     }
     div[data-baseweb="tag"] span {
-        color: #2E4436 !important;
+        color: #3E2723 !important;
     }
 
     /* v22 新增：強制所有輸入、文字區域、下拉選單容器保持高對比度純白底色，在任何情況下都不會呈現黑底 */
@@ -334,7 +334,7 @@ st.markdown("""
     div[data-baseweb="textarea"],
     div[data-baseweb="select"] {
         background-color: #FFFFFF !important;
-        color: #2E4436 !important;
+        color: #3E2723 !important;
     }
 
 
@@ -346,16 +346,16 @@ st.markdown("""
     div[data-testid="stMultiSelect"] div[role="button"],
     div[data-testid="stMultiSelect"] input {
         background-color: #FFFFFF !important;
-        color: #2E4436 !important;
+        color: #3E2723 !important;
     }
     /* 保持選取後的標籤 (Tag/Chip) 為淡雅水彩草綠底，使視覺對比更立體 */
     div[data-baseweb="tag"] {
-        background-color: #EBF3EC !important;
-        color: #2E4436 !important;
-        border: 1px solid #D5E5DE !important;
+        background-color: #F8E8E9 !important;
+        color: #3E2723 !important;
+        border: 1px solid #E8C4CB !important;
     }
     div[data-baseweb="tag"] span {
-        color: #2E4436 !important;
+        color: #3E2723 !important;
     }
 
 </style>
@@ -922,7 +922,7 @@ def generate_all_groups_docx_report(week, all_data, groups_data):
             
         tcPr = hdr_cells[i]._tc.get_or_add_tcPr()
         shading = OxmlElement('w:shd')
-        shading.set(qn('w:fill'), '1B5E20')
+        shading.set(qn('w:fill'), '8D4E5B')
         shading.set(qn('w:val'), 'clear')
         tcPr.append(shading)
         
@@ -1034,7 +1034,7 @@ def generate_all_groups_docx_report(week, all_data, groups_data):
                 
             tcPr = hdr_cells[i]._tc.get_or_add_tcPr()
             shading = OxmlElement('w:shd')
-            shading.set(qn('w:fill'), '1B5E20')
+            shading.set(qn('w:fill'), '8D4E5B')
             shading.set(qn('w:val'), 'clear')
             tcPr.append(shading)
             
@@ -1201,7 +1201,7 @@ def generate_docx_report(group_name, leader, week, submissions, roster_list):
             
         tcPr = hdr_cells[i]._tc.get_or_add_tcPr()
         shading = OxmlElement('w:shd')
-        shading.set(qn('w:fill'), '1B5E20')
+        shading.set(qn('w:fill'), '8D4E5B')
         shading.set(qn('w:val'), 'clear')
         tcPr.append(shading)
         
@@ -1370,57 +1370,57 @@ def send_email_copy(receiver_email, row_data):
         
         html_content = f"""
         <html>
-        <body style="font-family: 'Microsoft JhengHei', sans-serif; color: #2E4436; background-color: #F6FAF4; padding: 20px;">
-            <div style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF; padding: 30px; border-radius: 12px; border: 1px solid #D5E5DE; box-shadow: 2px 4px 15px rgba(143, 168, 147, 0.1);">
-                <h2 style="color: #3C6E47; border-bottom: 2px solid #8FA893; padding-bottom: 10px; text-align: center;">🌸 園區情緒觀察 填報確認副本</h2>
+        <body style="font-family: 'Microsoft JhengHei', sans-serif; color: #3E2723; background-color: #FAF0F2; padding: 20px;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF; padding: 30px; border-radius: 12px; border: 1px solid #E8C4CB; box-shadow: 2px 4px 15px rgba(143, 168, 147, 0.1);">
+                <h2 style="color: #8D4E5B; border-bottom: 2px solid #A65B6F; padding-bottom: 10px; text-align: center;">🌸 園區情緒觀察 填報確認副本</h2>
                 <p>親愛的 <b>{row_data['個人姓名']}</b> 吉祥：</p>
                 <p>感謝您撥冗填報情緒觀察當週總結！以下是您於 <b>{row_data['時間戳記']}</b> 提交的填報內容，請您留存備查：</p>
                 
                 <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-                    <tr style="background-color: #EBF3EC;">
-                        <th style="padding: 10px; border: 1px solid #D5E5DE; text-align: left; width: 35%; color: #1B5E20;">項目</th>
-                        <th style="padding: 10px; border: 1px solid #D5E5DE; text-align: left; color: #2E4436;">您的回報內容</th>
+                    <tr style="background-color: #F8E8E9;">
+                        <th style="padding: 10px; border: 1px solid #E8C4CB; text-align: left; width: 35%; color: #8D4E5B;">項目</th>
+                        <th style="padding: 10px; border: 1px solid #E8C4CB; text-align: left; color: #3E2723;">您的回報內容</th>
                     </tr>
                     <tr>
-                        <td style="padding: 10px; border: 1px solid #D5E5DE; font-weight: bold; color: #7A695A;">報名組別</td>
-                        <td style="padding: 10px; border: 1px solid #D5E5DE;">{row_data['組別']}</td>
+                        <td style="padding: 10px; border: 1px solid #E8C4CB; font-weight: bold; color: #6D4C41;">報名組別</td>
+                        <td style="padding: 10px; border: 1px solid #E8C4CB;">{row_data['組別']}</td>
                     </tr>
 
                     <tr>
-                        <td style="padding: 10px; border: 1px solid #D5E5DE; font-weight: bold; color: #7A695A;">個人編號</td>
-                        <td style="padding: 10px; border: 1px solid #D5E5DE;">{row_data['個人編號']}</td>
+                        <td style="padding: 10px; border: 1px solid #E8C4CB; font-weight: bold; color: #6D4C41;">個人編號</td>
+                        <td style="padding: 10px; border: 1px solid #E8C4CB;">{row_data['個人編號']}</td>
                     </tr>
                     <tr>
-                        <td style="padding: 10px; border: 1px solid #D5E5DE; font-weight: bold; color: #7A695A;">當週回報期間</td>
-                        <td style="padding: 10px; border: 1px solid #D5E5DE;">{row_data['當週回報期間']}</td>
+                        <td style="padding: 10px; border: 1px solid #E8C4CB; font-weight: bold; color: #6D4C41;">當週回報期間</td>
+                        <td style="padding: 10px; border: 1px solid #E8C4CB;">{row_data['當週回報期間']}</td>
                     </tr>
-                    <tr style="background-color: #FAF5EF;">
-                        <td style="padding: 10px; border: 1px solid #D5E5DE; font-weight: bold; color: #1B5E20;">組內共學出席回報</td>
-                        <td style="padding: 10px; border: 1px solid #D5E5DE; font-weight: bold; color: #1B5E20;">{row_data.get('本週組內共學', '否')}</td>
+                    <tr style="background-color: #F5EBE6;">
+                        <td style="padding: 10px; border: 1px solid #E8C4CB; font-weight: bold; color: #8D4E5B;">組內共學出席回報</td>
+                        <td style="padding: 10px; border: 1px solid #E8C4CB; font-weight: bold; color: #8D4E5B;">{row_data.get('本週組內共學', '否')}</td>
                     </tr>
-                    <tr style="background-color: #FAF5EF;">
-                        <td style="padding: 10px; border: 1px solid #D5E5DE; font-weight: bold; color: #1B5E20;">題目一：當週填表張數</td>
-                        <td style="padding: 10px; border: 1px solid #D5E5DE; font-weight: bold; color: #1B5E20;">{row_data['當週填表張數']} 張</td>
+                    <tr style="background-color: #F5EBE6;">
+                        <td style="padding: 10px; border: 1px solid #E8C4CB; font-weight: bold; color: #8D4E5B;">題目一：當週填表張數</td>
+                        <td style="padding: 10px; border: 1px solid #E8C4CB; font-weight: bold; color: #8D4E5B;">{row_data['當週填表張數']} 張</td>
                     </tr>
-                    <tr style="background-color: #FAF5EF;">
-                        <td style="padding: 10px; border: 1px solid #D5E5DE; font-weight: bold; color: #1B5E20;">題目二：累積填表張數</td>
-                        <td style="padding: 10px; border: 1px solid #D5E5DE; font-weight: bold; color: #1B5E20;">{row_data['累積填表張數']} 張 (自 2026/8/17 起算)</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 10px; border: 1px solid #D5E5DE; font-weight: bold; color: #7A695A;">2.本週最常出現的身體反應</td>
-                        <td style="padding: 10px; border: 1px solid #D5E5DE;">{row_data.get('最常出現的身體反應', '無')}</td>
+                    <tr style="background-color: #F5EBE6;">
+                        <td style="padding: 10px; border: 1px solid #E8C4CB; font-weight: bold; color: #8D4E5B;">題目二：累積填表張數</td>
+                        <td style="padding: 10px; border: 1px solid #E8C4CB; font-weight: bold; color: #8D4E5B;">{row_data['累積填表張數']} 張 (自 2026/8/17 起算)</td>
                     </tr>
                     <tr>
-                        <td style="padding: 10px; border: 1px solid #D5E5DE; font-weight: bold; color: #7A695A;">3.最常出現的情緒類別</td>
-                        <td style="padding: 10px; border: 1px solid #D5E5DE;">{row_data.get('最常出現的情緒類別', '無')}</td>
+                        <td style="padding: 10px; border: 1px solid #E8C4CB; font-weight: bold; color: #6D4C41;">2.本週最常出現的身體反應</td>
+                        <td style="padding: 10px; border: 1px solid #E8C4CB;">{row_data.get('最常出現的身體反應', '無')}</td>
                     </tr>
                     <tr>
-                        <td style="padding: 10px; border: 1px solid #D5E5DE; font-weight: bold; color: #7A695A;">4.最常用的落地方式</td>
-                        <td style="padding: 10px; border: 1px solid #D5E5DE;">{row_data.get('最常用的落地方式', '無')}</td>
+                        <td style="padding: 10px; border: 1px solid #E8C4CB; font-weight: bold; color: #6D4C41;">3.最常出現的情緒類別</td>
+                        <td style="padding: 10px; border: 1px solid #E8C4CB;">{row_data.get('最常出現的情緒類別', '無')}</td>
                     </tr>
                     <tr>
-                        <td style="padding: 10px; border: 1px solid #D5E5DE; font-weight: bold; color: #7A695A;">5.心得、困難或對法師提問</td>
-                        <td style="padding: 10px; border: 1px solid #D5E5DE; white-space: pre-wrap;">{row_data['心得或對法師提問']}</td>
+                        <td style="padding: 10px; border: 1px solid #E8C4CB; font-weight: bold; color: #6D4C41;">4.最常用的落地方式</td>
+                        <td style="padding: 10px; border: 1px solid #E8C4CB;">{row_data.get('最常用的落地方式', '無')}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #E8C4CB; font-weight: bold; color: #6D4C41;">5.心得、困難或對法師提問</td>
+                        <td style="padding: 10px; border: 1px solid #E8C4CB; white-space: pre-wrap;">{row_data['心得或對法師提問']}</td>
                     </tr>
                 </table>
                 
@@ -1504,20 +1504,20 @@ else:
     [data-baseweb="popover"] ul, 
     [data-baseweb="popover"] li {
         background-color: #FFFFFF !important;
-        color: #2E4436 !important;
-        border-color: #D5E5DE !important;
+        color: #3E2723 !important;
+        border-color: #E8C4CB !important;
     }
     /* 當焦點在輸入框或文字區時的文字顏色也必須保持深森林綠 */
     input:focus, textarea:focus {
-        color: #2E4436 !important;
+        color: #3E2723 !important;
         background-color: #FFFFFF !important;
     }
 
     /* 確保側邊欄（Sidebar）在任何模式下都是溫暖的水彩粘土白，而非黑/深灰色 */
     section[data-testid="stSidebar"], [data-testid="stSidebarUserContent"], div[data-testid="stSidebarCollapseButton"] {
-        background-color: #FAF5EF !important;
-        background-image: linear-gradient(180deg, #F3F8F2 0%, #FAF5EF 100%) !important;
-        color: #2E4436 !important;
+        background-color: #F5EBE6 !important;
+        background-image: linear-gradient(180deg, #FAF0F2 0%, #F5EBE6 100%) !important;
+        color: #3E2723 !important;
     }
     section[data-testid="stSidebar"] p, 
     section[data-testid="stSidebar"] span, 
@@ -1525,26 +1525,26 @@ else:
     section[data-testid="stSidebar"] h1, 
     section[data-testid="stSidebar"] h2, 
     section[data-testid="stSidebar"] h3 {
-        color: #2E4436 !important;
+        color: #3E2723 !important;
     }
 
     /* 確保表格 Dataframe 在任何模式下皆為白色背景與深色文字，全置中對齊防看錯行 */
     div[data-testid="stTable"] table, div[data-testid="stDataFrame"] table {
         background-color: #FFFFFF !important;
-        color: #2E4436 !important;
+        color: #3E2723 !important;
         border-collapse: separate !important;
         border-spacing: 0 !important;
         width: 100% !important;
     }
     div[data-testid="stTable"] th, div[data-testid="stDataFrame"] th {
-        background-color: #EBF3EC !important;
-        color: #1B5E20 !important;
+        background-color: #F8E8E9 !important;
+        color: #8D4E5B !important;
         text-align: center !important; /* 標頭置中對齊 */
         vertical-align: middle !important;
     }
     div[data-testid="stTable"] td, div[data-testid="stDataFrame"] td {
         background-color: #FFFFFF !important;
-        color: #2E4436 !important;
+        color: #3E2723 !important;
         border-top: 1px solid #EAE0D5 !important; /* 補上頂底邊框線防止 separate 模式下邊框不見 */
         border-bottom: 1px solid #EAE0D5 !important;
         text-align: center !important; /* 數據置中對齊，防手機上看錯行 */
@@ -1581,7 +1581,7 @@ else:
         border-collapse: separate !important;
         border-spacing: 0 !important;
         background-color: #FFFFFF !important;
-        color: #2E4436 !important;
+        color: #3E2723 !important;
         font-size: 0.95rem;
     }
     /* 保持表頭固定在頂部 */
@@ -1593,18 +1593,18 @@ else:
         z-index: 99 !important; /* 確保在滾動時絕對壓在下方資料之上 */
     }
     .scroll-table-container th {
-        background-color: #EBF3EC !important;
-        color: #1B5E20 !important;
+        background-color: #F8E8E9 !important;
+        color: #8D4E5B !important;
         text-align: center !important;
         vertical-align: middle !important;
         padding: 10px 15px !important;
         font-weight: bold !important;
-        box-shadow: 0 1px 0 #D5E5DE, 0 2px 4px rgba(0,0,0,0.04) !important; /* 加上下分割陰影 */
+        box-shadow: 0 1px 0 #E8C4CB, 0 2px 4px rgba(0,0,0,0.04) !important; /* 加上下分割陰影 */
         border: none !important;
     }
     .scroll-table-container td {
         background-color: #FFFFFF !important;
-        color: #2E4436 !important;
+        color: #3E2723 !important;
         border-top: 1px solid #EAE0D5 !important;
         border-bottom: 1px solid #EAE0D5 !important;
         text-align: center !important;
@@ -1614,13 +1614,13 @@ else:
 
     /* 確保 Metric 數據指標卡片也有高對比度深色文字與白/淺色底色，在任何情況下都不會呈現黑底 */
     div[data-testid="stMetricValue"] > div {
-        color: #1B5E20 !important; /* 清新綠數字 */
+        color: #8D4E5B !important; /* 清新綠數字 */
     }
     div[data-testid="stMetricLabel"] > div {
-        color: #7A695A !important; /* 泥土腳標題 */
+        color: #6D4C41 !important; /* 泥土腳標題 */
     }
     div[data-testid="stMetric"] {
-        background-color: #FAF5EF !important;
+        background-color: #F5EBE6 !important;
         border-radius: 12px !important;
         padding: 12px !important;
         border: 1px solid #EAE0D5 !important;
@@ -1634,20 +1634,20 @@ else:
     div[data-testid="stCodeBlock"] code,
     div[data-testid="stCodeBlock"] span,
     code, pre {
-        background-color: #FAF5EF !important;
-        color: #2E4436 !important;
+        background-color: #F5EBE6 !important;
+        color: #3E2723 !important;
         border-radius: 8px !important;
         border: 1px solid #EAE0D5 !important;
     }
 
     /* v22 新增：強制 Multiselect 選項標籤 (Tag/Chip) 在暗黑模式下為淺底深綠字，杜絕黑底 */
     div[data-baseweb="tag"] {
-        background-color: #EBF3EC !important;
-        color: #2E4436 !important;
-        border: 1px solid #D5E5DE !important;
+        background-color: #F8E8E9 !important;
+        color: #3E2723 !important;
+        border: 1px solid #E8C4CB !important;
     }
     div[data-baseweb="tag"] span {
-        color: #2E4436 !important;
+        color: #3E2723 !important;
     }
 
     /* v22 新增：強制所有輸入、文字區域、下拉選單容器保持高對比度純白底色，在任何情況下都不會呈現黑底 */
@@ -1663,7 +1663,7 @@ else:
     div[data-baseweb="textarea"],
     div[data-baseweb="select"] {
         background-color: #FFFFFF !important;
-        color: #2E4436 !important;
+        color: #3E2723 !important;
     }
 
 </style>
@@ -1727,34 +1727,47 @@ if show_admin_login_screen:
 
 elif not is_authenticated:
     # 2. Student Questionnaire View (Ultra-clean, No st.form, Zero mobile confirmation alerts)
-    st.info("我有一個身體，我有一個人身。    注視當下，就是前進。")
+    st.info("我有一個身體，我有一個人身。    注視當下，就是向前。")
     
     st.subheader("組別與姓名")
     col1, col2 = st.columns(2)
     with col1:
-        group_selected = st.selectbox("請選擇您的組別 *", list(groups_data.keys()), index=9) # Default to Group 10
+        group_selected = st.selectbox("請選擇您的組別 *", list(groups_data.keys()), index=None, placeholder="請選擇組別...")
     
     with col2:
-        names_list = groups_data[group_selected]["members"]
-        name_selected = st.selectbox("請選擇您的姓名 *", names_list)
+        if group_selected:
+            names_list = groups_data[group_selected]["members"]
+            name_selected = st.selectbox("請選擇您的姓名 *", names_list, index=None, placeholder="請選擇姓名...")
+        else:
+            name_selected = st.selectbox("請選擇您的姓名 *", [], index=None, placeholder="請先選擇組別...")
         
-    leader = groups_data[group_selected]["leader"]
+    if group_selected:
+        leader = groups_data[group_selected]["leader"]
+        group_num = group_selected.replace("第 ", "").replace(" 組", "")
+    else:
+        leader = ""
+        group_num = ""
     
-    group_num = group_selected.replace("第 ", "").replace(" 組", "")
     if name_selected and " " in name_selected:
         parts = name_selected.split(" ")
         auto_member_id = parts[0]
         actual_name = parts[1]
-    else:
+    elif name_selected:
         auto_member_id = f"{group_num}-X"
         actual_name = name_selected
+    else:
+        auto_member_id = "尚未選擇"
+        actual_name = ""
         
-    st.markdown(f'<div class="group-box">ℹ️ 您選取的是 <b>{group_selected}</b>，請確認已選擇編號為：<b>{auto_member_id}</b></div>', unsafe_allow_html=True)
+    if group_selected and name_selected:
+        st.markdown(f'<div class="group-box">ℹ️ 您選取的是 <b>{group_selected}</b>，請確認已選擇編號為：<b>{auto_member_id} ({actual_name})</b></div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="group-box">ℹ️ 請先選擇您的 <b>組別</b> 與 <b>姓名</b> 以進行填報</div>', unsafe_allow_html=True)
     
     if st.session_state.get("submitted_successfully", False):
         st.markdown(f"""
         <div class="success-box">
-            <h3 style="margin-top: 0; color: #0F5132;">🎉 提交成功！</h3>
+            <h3 style="margin-top: 0; color: #8D4E5B;">🎉 提交成功！</h3>
             <p>感謝 <b>{st.session_state.get('last_submitted_name', '')}</b> 的回報！您的填表紀錄已妥善儲存。</p>
             {f'<p>💡 {st.session_state.get("last_submitted_msg")}</p>' if st.session_state.get('last_submitted_msg') else ''}
             <ul>
@@ -1784,7 +1797,7 @@ elif not is_authenticated:
             div[data-testid="stCheckbox"] label p {
                 font-size: 1.25rem !important;
                 font-weight: 700 !important;
-                color: #1B5E20 !important;
+                color: #8D4E5B !important;
                 line-height: 1.6 !important;
             }
         </style>
@@ -1839,7 +1852,10 @@ elif not is_authenticated:
         submit_btn = st.button("提交問卷 📨", type="primary", key="student_submit_btn")
         
         if submit_btn:
-            email = student_email_val.strip() if student_email_val.strip() else f"{actual_name}@example.com"
+            if not group_selected or not name_selected:
+                st.error("⚠️ 請先選擇您的「組別」與「姓名」後再提交問卷！")
+            else:
+                email = student_email_val.strip() if student_email_val.strip() else f"{actual_name}@example.com"
             GENDER_MAP = {
     "丁秌全": "男",
     "何如甘": "女",
