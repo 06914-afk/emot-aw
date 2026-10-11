@@ -29,6 +29,13 @@ st.set_page_config(
 # Custom Styling
 st.markdown("""
 <style>
+/* 徹底隱藏右上角選單、工具列與「View code」檢視按鈕 */ 
+#MainMenu {visibility: hidden;} 
+header {visibility: hidden;} 
+[data-testid="stHeader"] {display: none !important;} 
+[data-testid="stToolbar"] {display: none !important;} 
+footer {visibility: hidden;}
+
     /* 全域清新水彩漸層背景與精緻字型 */
     html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
         background-color: #FAF0F2 !important;
