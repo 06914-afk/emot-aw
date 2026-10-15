@@ -29,13 +29,6 @@ st.set_page_config(
 # Custom Styling
 st.markdown("""
 <style>
-/* 徹底隱藏右上角選單、工具列與「View code」檢視按鈕 */ 
-#MainMenu {visibility: hidden;} 
-header {visibility: hidden;} 
-[data-testid="stHeader"] {display: none !important;} 
-[data-testid="stToolbar"] {display: none !important;} 
-footer {visibility: hidden;}
-
     /* 全域清新水彩漸層背景與精緻字型 */
     html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
         background-color: #FAF0F2 !important;
@@ -891,10 +884,10 @@ def build_group_summary_text(g_name, leader, group_submissions, roster_list):
 def generate_all_groups_docx_report(week, all_data, groups_data):
     doc = Document()
     for section in doc.sections:
-        section.top_margin = Inches(1)
-        section.bottom_margin = Inches(1)
-        section.left_margin = Inches(1)
-        section.right_margin = Inches(1)
+        section.top_margin = Inches(0.5)
+        section.bottom_margin = Inches(0.5)
+        section.left_margin = Inches(0.5)
+        section.right_margin = Inches(0.5)
         
     style = doc.styles['Normal']
     font = style.font
@@ -991,7 +984,6 @@ def generate_all_groups_docx_report(week, all_data, groups_data):
         
         row_cells = table_exec.add_row().cells
         r_vals = [g_name, ldr, str(len(m_list_full)), str(sub_count), str(unsub_count), f"{g_co_learn} 人", f"{g_sheets} 張", f"{avg_sheets:.1f} 張/人", f"{rate:.1f}%"]
-        
         for i, val in enumerate(r_vals):
             row_cells[i].text = val
             row_cells[i].width = cols_exec[i][1]
@@ -1000,25 +992,29 @@ def generate_all_groups_docx_report(week, all_data, groups_data):
             for r in p.runs:
                 r.font.name = 'Microsoft JhengHei'
                 r.font.size = Pt(9.5)
-                
-    overall_rate = (total_camp_sub / total_camp_m) * 100 if total_camp_m > 0 else 0
-    overall_avg = (total_camp_sheets / total_camp_m) if total_camp_m > 0 else 0.0
-    p_camp_met = doc.add_paragraph()
-    p_camp_met.paragraph_format.space_before = Pt(10)
-    p_camp_met.paragraph_format.space_after = Pt(20)
-    r_cmet = p_camp_met.add_run(f"💡 全營整體概況：全營 18 小組應填報共 {total_camp_m} 人，當週實際完成登記 {total_camp_sub} 人（其中參加組內共學共 {total_camp_co_learn} 人），未填報 {total_camp_unsub} 人，全營整體填報率為 {overall_rate:.1f}%。當週全營累積填寫情緒觀察表總計 {total_camp_sheets} 張，全營平均每人填寫 {overall_avg:.1f} 張。")
-    r_cmet.font.size = Pt(10.5)
-    r_cmet.font.bold = True
-    r_cmet.font.color.rgb = RGBColor(46, 125, 50)
+                if rate == 0 and i == 8:
+                    r.font.color.rgb = RGBColor(183, 28, 28)
+                elif rate > 0 and i == 8:
+                    r.font.color.rgb = RGBColor(46, 125, 50)
+                    
+    total_rate = (total_camp_sub / total_camp_m) * 100 if total_camp_m > 0 else 0
+    avg_camp_sheets = (total_camp_sheets / total_camp_m) if total_camp_m > 0 else 0.0
+    tot_cells = table_exec.add_row().cells
+    tot_vals = ["全營總計", "全營 18 組", str(total_camp_m), str(total_camp_sub), str(total_camp_unsub), f"{total_camp_co_learn} 人", f"{total_camp_sheets} 張", f"{avg_camp_sheets:.1f} 張/人", f"{total_rate:.1f}%"]
+    for i, val in enumerate(tot_vals):
+        tot_cells[i].text = val
+        tot_cells[i].width = cols_exec[i][1]
+        p = tot_cells[i].paragraphs[0]
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        for r in p.runs:
+            r.font.bold = True
+            r.font.name = 'Microsoft JhengHei'
+            r.font.size = Pt(9.5)
+            r.font.color.rgb = RGBColor(27, 94, 32)
+            
+    doc.add_paragraph()
     
-    # 3. Group Detailed Sections
-    h_group_sec = doc.add_paragraph()
-    run_h_group_sec = h_group_sec.add_run("💬 十八組各組繳交狀況表格與組員心得條列摘要")
-    run_h_group_sec.font.size = Pt(14)
-    run_h_group_sec.bold = True
-    run_h_group_sec.font.color.rgb = RGBColor(27, 94, 32)
-    h_group_sec.paragraph_format.space_after = Pt(12)
-    
+    # 3. Merged Detailed Reports for All 18 Groups (No Deletions, No Summaries)
     for g_name, g_info in groups_data.items():
         ldr = g_info["leader"]
         group_roster = g_info["members"]
@@ -1035,25 +1031,25 @@ def generate_all_groups_docx_report(week, all_data, groups_data):
                 m_name = m_full
             roster_list.append({"組員號碼": m_id, "個人姓名": m_name, "編號排序": idx+1})
             
-        g_submissions = wk_sub_all[wk_sub_all["組別"] == g_name] if not wk_sub_all.empty else pd.DataFrame()
-        sub_map = {row["個人姓名"]: row for _, row in g_submissions.iterrows()} if not g_submissions.empty else {}
+        g_sub = wk_sub_all[wk_sub_all["組別"] == g_name] if not wk_sub_all.empty else pd.DataFrame()
+        sub_map = {row["個人姓名"]: row for _, row in g_sub.iterrows()} if not g_sub.empty else {}
         
         # Group Header
         p_gh = doc.add_paragraph()
-        p_gh.paragraph_format.space_before = Pt(14)
-        p_gh.paragraph_format.space_after = Pt(4)
+        p_gh.paragraph_format.space_before = Pt(18)
+        p_gh.paragraph_format.space_after = Pt(6)
         r_gh = p_gh.add_run(f"🔴 {g_name} （保溫組長：{ldr}）")
-        r_gh.font.size = Pt(13)
+        r_gh.font.size = Pt(14)
         r_gh.bold = True
-        r_gh.font.color.rgb = RGBColor(122, 105, 90)
+        r_gh.font.color.rgb = RGBColor(27, 94, 32)
         
-        # Group Status Table (Same as Group Leader Report Table)
+        # Group Data Table
         cols_data = [("個人編號", Inches(1.1)), ("組員姓名", Inches(1.1)), ("組內共學", Inches(1.0)), ("填報狀態", Inches(1.0)), ("當週張數", Inches(0.9)), ("累計張數", Inches(0.9))]
-        table_g = doc.add_table(rows=1, cols=6)
-        table_g.alignment = WD_TABLE_ALIGNMENT.CENTER
-        table_g.autofit = False
+        table = doc.add_table(rows=1, cols=6)
+        table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        table.autofit = False
         
-        hdr_cells = table_g.rows[0].cells
+        hdr_cells = table.rows[0].cells
         for i, (name, width) in enumerate(cols_data):
             hdr_cells[i].text = name
             hdr_cells[i].width = width
@@ -1067,19 +1063,19 @@ def generate_all_groups_docx_report(week, all_data, groups_data):
                 
             tcPr = hdr_cells[i]._tc.get_or_add_tcPr()
             shading = OxmlElement('w:shd')
-            shading.set(qn('w:fill'), '8D4E5B')
+            shading.set(qn('w:fill'), '1B5E20')
             shading.set(qn('w:val'), 'clear')
             tcPr.append(shading)
             
+        g_total_sheets = 0
         g_submitted_count = 0
         g_co_learn_count = 0
-        g_total_sheets = 0
         
         for row in roster_list:
             m_name = row["個人姓名"]
             m_id = row["組員號碼"]
             
-            row_cells = table_g.add_row().cells
+            row_cells = table.add_row().cells
             status = "❌ 未填"
             co_learn_str = "-"
             w_sheets = "-"
@@ -1103,7 +1099,7 @@ def generate_all_groups_docx_report(week, all_data, groups_data):
                     c_sheets = str(int(sub_map[m_name]["累積填表張數"]))
                 except Exception:
                     c_sheets = "0"
-                
+                    
             row_data = [m_id, m_name, co_learn_str, status, w_sheets, c_sheets]
             
             for i, val in enumerate(row_data):
@@ -1127,59 +1123,92 @@ def generate_all_groups_docx_report(week, all_data, groups_data):
         r_gm.font.bold = True
         r_gm.font.color.rgb = RGBColor(100, 100, 100)
         
-        # Group Member Thoughts Itemized Summary (Direct 1-sentence summaries, skipping unwritten members)
+        # Detailed Member Reflections
         p_sum_lbl = doc.add_paragraph()
         p_sum_lbl.paragraph_format.space_before = Pt(6)
         p_sum_lbl.paragraph_format.space_after = Pt(4)
-        r_s_lbl = p_sum_lbl.add_run(f"📝 {g_name} 本週組員心得條列摘要：")
+        r_s_lbl = p_sum_lbl.add_run(f"💬 {g_name} 組員心得與對法師提問明細：")
         r_s_lbl.bold = True
-        r_s_lbl.font.size = Pt(10.5)
+        r_s_lbl.font.size = Pt(11)
         r_s_lbl.font.color.rgb = RGBColor(27, 94, 32)
         
-        has_written = False
         for row in roster_list:
             m_name = row["個人姓名"]
             m_id = row["組員號碼"]
+            
+            p_mem = doc.add_paragraph()
+            p_mem.paragraph_format.space_before = Pt(6)
+            p_mem.paragraph_format.space_after = Pt(2)
+            r_mem = p_mem.add_run(f"【{m_id}】 {m_name}")
+            r_mem.bold = True
+            r_mem.font.size = Pt(11)
+            r_mem.font.color.rgb = RGBColor(78, 52, 46)
+            
             if m_name in sub_map:
-                raw_fb = sub_map[m_name].get("心得或對法師提問", "")
-                one_sentence = summarize_to_one_sentence(raw_fb)
-                if one_sentence:
-                    has_written = True
-                    p_item = doc.add_paragraph()
-                    p_item.paragraph_format.left_indent = Inches(0.2)
-                    p_item.paragraph_format.space_after = Pt(3)
+                sub = sub_map[m_name]
+                sheets = sub.get("當週填表張數", 0)
+                cum_sheets = sub.get("累積填表張數", 0)
+                feedback = sub.get("心得或對法師提問", "")
+                
+                p_sheets = doc.add_paragraph()
+                p_sheets.paragraph_format.left_indent = Inches(0.25)
+                p_sheets.paragraph_format.space_after = Pt(2)
+                co_val = str(sub.get("本週組內共學", "否")).strip()
+                co_txt = "是" if co_val == "是" else "否"
+                r_sh = p_sheets.add_run(f"📊 本週填表：{int(sheets)} 張 | 累計填表：{int(cum_sheets)} 張 | 本週組內共學：{co_txt}")
+                r_sh.font.size = Pt(9.5)
+                r_sh.italic = True
+                r_sh.font.color.rgb = RGBColor(120, 120, 120)
+                
+                extra_lines = []
+                if "最常出現的身體反應" in sub and str(sub["最常出現的身體反應"]).strip() not in ["", "nan", "None", "無"]:
+                    extra_lines.append(f"最常出現的身體反應: {sub['最常出現的身體反應']}")
+                if "最常出現的情緒類別" in sub and str(sub["最常出現的情緒類別"]).strip() not in ["", "nan", "None", "無"]:
+                    extra_lines.append(f"最常出現的情緒類別: {sub['最常出現的情緒類別']}")
+                if "最常用的落地方式" in sub and str(sub["最常用的落地方式"]).strip() not in ["", "nan", "None", "無"]:
+                    extra_lines.append(f"最常用的落地方式: {sub['最常用的落地方式']}")
                     
-                    r_id_name = p_item.add_run(f"• 【{m_id} {m_name}】：")
-                    r_id_name.bold = True
-                    r_id_name.font.size = Pt(10)
-                    r_id_name.font.color.rgb = RGBColor(78, 52, 46)
+                if extra_lines:
+                    p_extra = doc.add_paragraph()
+                    p_extra.paragraph_format.left_indent = Inches(0.25)
+                    p_extra.paragraph_format.space_after = Pt(2)
+                    r_ex = p_extra.add_run(" | ".join(extra_lines))
+                    r_ex.font.size = Pt(9.5)
+                    r_ex.font.color.rgb = RGBColor(100, 110, 100)
+                
+                p_feed = doc.add_paragraph()
+                p_feed.paragraph_format.left_indent = Inches(0.25)
+                p_feed.paragraph_format.space_after = Pt(10)
+                
+                if str(feedback).strip() in ["", "無", "nan", "None"]:
+                    r_feed = p_feed.add_run("（組員本週無填寫心得或提問）")
+                    r_feed.font.color.rgb = RGBColor(150, 150, 150)
+                    r_feed.italic = True
+                else:
+                    r_feed = p_feed.add_run(str(feedback).strip())
+                    r_feed.font.color.rgb = RGBColor(33, 33, 33)
                     
-                    r_txt = p_item.add_run(one_sentence)
-                    r_txt.font.size = Pt(10)
-                    r_txt.font.color.rgb = RGBColor(40, 40, 40)
-                    
-        if not has_written:
-            p_none = doc.add_paragraph()
-            p_none.paragraph_format.left_indent = Inches(0.2)
-            p_none.paragraph_format.space_after = Pt(10)
-            r_none = p_none.add_run("（本週貴組組員暫無填寫觀照心得或提問）")
-            r_none.font.size = Pt(9.5)
-            r_none.italic = True
-            r_none.font.color.rgb = RGBColor(140, 140, 140)
-        
-        p_div = doc.add_paragraph()
-        p_div.paragraph_format.space_after = Pt(6)
-        r_div = p_div.add_run("―" * 55)
-        r_div.font.color.rgb = RGBColor(220, 220, 220)
-        r_div.font.size = Pt(8)
-        
+            else:
+                p_feed = doc.add_paragraph()
+                p_feed.paragraph_format.left_indent = Inches(0.25)
+                p_feed.paragraph_format.space_after = Pt(10)
+                r_feed = p_feed.add_run("❌ 本週尚未提交週總結問卷。")
+                r_feed.font.color.rgb = RGBColor(183, 28, 28)
+                r_feed.italic = True
+                
+            p_div = doc.add_paragraph()
+            p_div.paragraph_format.space_before = Pt(4)
+            p_div.paragraph_format.space_after = Pt(4)
+            r_div = p_div.add_run("―" * 50)
+            r_div.font.color.rgb = RGBColor(230, 230, 230)
+            r_div.font.size = Pt(8)
+            
     bio = io.BytesIO()
     doc.save(bio)
     bio.seek(0)
     return bio
 
 
-# Helper to generate beautiful Word Document (.docx) Weekly Thoughts Report
 def generate_docx_report(group_name, leader, week, submissions, roster_list):
     doc = Document()
     for section in doc.sections:
