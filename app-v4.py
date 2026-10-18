@@ -29,15 +29,13 @@ st.set_page_config(
 # Custom Styling
 st.markdown("""
 <style>
-
-/* 徹底隱藏右上角選單、工具列與「View code」檢視按鈕 */
-#MainMenu {visibility: hidden;}
-header {visibility: hidden;}
-[data-testid="stHeader"] {display: none !important;}
-[data-testid="stToolbar"] {display: none !important;}
-footer {visibility: hidden;}
-
-/* 全域清新水彩漸層背景與精緻字型 */
+    /* 徹底隱藏右上角選單、工具列與「View code」檢視按鈕 */
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    [data-testid="stHeader"] {display: none !important;}
+    [data-testid="stToolbar"] {display: none !important;}
+    footer {visibility: hidden;}
+    /* 全域清新水彩漸層背景與精緻字型 */
     html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
         background-color: #FAF0F2 !important;
         background-image: linear-gradient(135deg, #FAF0F2 0%, #F5EBE6 100%) !important;
@@ -672,16 +670,60 @@ try:
 except Exception:
     pass
 
+# Function to fetch live data from Google Sheets (Cloud Sync)
+@st.cache_data(ttl=30)
+def fetch_live_cloud_data(gas_url, csv_pub_url=""):
+    # 1. 優先透過 GAS doGet 即時拉取 Google 試算表最新 JSON 全量數據
+    if gas_url and gas_url.strip():
+        try:
+            resp = requests.get(gas_url.strip(), timeout=8)
+            if resp.status_code == 200:
+                raw_json = resp.json()
+                if isinstance(raw_json, list) and len(raw_json) > 0:
+                    df_cloud = pd.DataFrame(raw_json)
+                    return df_cloud
+        except Exception:
+            pass
+
+    # 2. 次要嘗試發布至網路的 CSV 直連網址 (若 Secrets 有設定 sheet_csv_url)
+    if csv_pub_url and csv_pub_url.strip():
+        try:
+            df_pub = pd.read_csv(csv_pub_url.strip())
+            if not df_pub.empty:
+                return df_pub
+        except Exception:
+            pass
+
+    return None
+
 # Function to load database
 def load_data():
-    if os.path.exists(DB_FILE):
+    csv_pub_url = ""
+    try:
+        if "sheet_csv_url" in st.secrets:
+            csv_pub_url = st.secrets["sheet_csv_url"]
+    except Exception:
+        pass
+
+    # 💡 優先從 Google 雲端試算表即時載入全量數據 (徹底解決容器重啟與六日資料空窗問題)
+    df_cloud = fetch_live_cloud_data(gas_api_url, csv_pub_url)
+    df = None
+
+    if df_cloud is not None and not df_cloud.empty:
+        df = df_cloud
+    elif os.path.exists(DB_FILE):
         try:
             df = pd.read_csv(DB_FILE)
-            if not df.empty and "時間戳記" in df.columns and "個人姓名" in df.columns and "當週回報期間" in df.columns:
+        except Exception:
+            df = None
+
+    if df is not None and not df.empty:
+        try:
+            if "時間戳記" in df.columns and "個人姓名" in df.columns and "當週回報期間" in df.columns:
                 # 依時間戳記排序，確保最後提交的在最後面
                 df = df.sort_values(by="時間戳記")
                 
-                # 💡 v51 升級：1. 自動對齊與相容舊版/異構週次字串 (如舊版 Google 表單的 W1 舊日期或簡寫 W1)
+                # 💡 v51 升級：1. 自動對齊與相容舊版/異構週次字串
                 needs_resave = False
                 norm_periods = []
                 for orig_p in df["當週回報期間"]:
@@ -708,17 +750,18 @@ def load_data():
                     except Exception:
                         pass
 
-                # 💡 自動備份保護：確保載入舊 CSV 檔時自動補齊「本週組內共學」欄位，防止舊資料缺失
+                # 💡 自動備份保護：確保載入資料時自動補齊「本週組內共學」欄位
                 if "本週組內共學" not in df.columns:
                     df["本週組內共學"] = "否"
                 else:
                     df["本週組內共學"] = df["本週組內共學"].fillna("否")
 
-                # 排除重複填報：每個組員在同一週（當週回報期間）只能保留最後一筆（最新）資料，防止統計數據虛胖
+                # 排除重複填報：每個組員在同一週只能保留最後一筆（最新）資料，防止統計數據虛胖
                 df = df.drop_duplicates(subset=["組別", "當週回報期間", "個人姓名"], keep="last")
             return df
         except Exception:
             pass
+
     # Return empty template dataframe
     return pd.DataFrame(columns=[
         "時間戳記", "組別", "保溫組長", "個人姓名", "電子郵件", 
@@ -726,9 +769,9 @@ def load_data():
         "累積填表張數", "心得或對法師提問", "最常出現的身體反應", 
         "最常出現的情緒類別", "最常用的落地方式", "本週組內共學"
     ])
-
 # Function to save record (local + cloud try)
 def save_record(new_row, gas_url=""):
+    st.cache_data.clear() # 💡 填報後自動清空快取，確保最新數據立即顯示
     # 💡 v51 升級：寫入前自動進行週次字串對齊與未來週次除錯校正
     if "當週回報期間" in new_row:
         new_row["當週回報期間"] = normalize_week_string(new_row["當週回報期間"], weeks_list)
