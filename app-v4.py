@@ -671,21 +671,23 @@ except Exception:
     pass
 
 # Function to fetch live data from Google Sheets (Cloud Sync)
-@st.cache_data(ttl=30)
+@st.cache_data(ttl=15)
 def fetch_live_cloud_data(gas_url, csv_pub_url=""):
     # 1. 優先透過 GAS doGet 即時拉取 Google 試算表最新 JSON 全量數據
     if gas_url and gas_url.strip():
         try:
-            resp = requests.get(gas_url.strip(), timeout=8)
+            resp = requests.get(gas_url.strip(), timeout=10, allow_redirects=True)
             if resp.status_code == 200:
-                raw_json = resp.json()
-                if isinstance(raw_json, list) and len(raw_json) > 0:
-                    df_cloud = pd.DataFrame(raw_json)
-                    return df_cloud
+                # 確保傳回的是 JSON 而非 Google 登入頁 HTML
+                if "application/json" in resp.headers.get("Content-Type", "") or resp.text.strip().startswith("["):
+                    raw_json = resp.json()
+                    if isinstance(raw_json, list) and len(raw_json) > 0:
+                        df_cloud = pd.DataFrame(raw_json)
+                        return df_cloud
         except Exception:
             pass
 
-    # 2. 次要嘗試發布至網路的 CSV 直連網址 (若 Secrets 有設定 sheet_csv_url)
+    # 2. 備用方案：若 Secrets 有設定發布至網路的 CSV 直連網址 (sheet_csv_url)
     if csv_pub_url and csv_pub_url.strip():
         try:
             df_pub = pd.read_csv(csv_pub_url.strip())
