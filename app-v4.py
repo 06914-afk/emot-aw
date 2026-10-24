@@ -671,25 +671,78 @@ except Exception:
     pass
 
 # Function to load database
+# Function to fetch cloud CSV data safely
+@st.cache_data(ttl=15)
+def fetch_published_sheet_data(csv_pub_url):
+    if not csv_pub_url or not csv_pub_url.strip():
+        return None
+    try:
+        df_pub = pd.read_csv(csv_pub_url.strip())
+        if not df_pub.empty:
+            # 欄位標題清洗與對齊
+            rename_map = {}
+            for col in df_pub.columns:
+                c_str = str(col).strip()
+                if c_str in ["Timestamp", "提交時間", "時間"]:
+                    rename_map[col] = "時間戳記"
+                elif c_str in ["姓名", "填表者"]:
+                    rename_map[col] = "個人姓名"
+                else:
+                    rename_map[col] = c_str
+            df_pub = df_pub.rename(columns=rename_map)
+            
+            if "時間戳記" in df_pub.columns and "個人姓名" in df_pub.columns and "當週回報期間" in df_pub.columns:
+                return df_pub
+    except Exception:
+        pass
+    return None
+
+# Function to load database with Cloud Sync & Ephemeral Container Protection
 def load_data():
+    csv_pub_url = ""
+    try:
+        if "sheet_csv_url" in st.secrets:
+            csv_pub_url = st.secrets["sheet_csv_url"]
+    except Exception:
+        pass
+
+    df_local = None
     if os.path.exists(DB_FILE):
         try:
-            df = pd.read_csv(DB_FILE)
-            if not df.empty and "時間戳記" in df.columns and "個人姓名" in df.columns and "當週回報期間" in df.columns:
-                # 依時間戳記排序，確保最後提交的在最後面
+            df_local = pd.read_csv(DB_FILE)
+            if df_local.empty or "時間戳記" not in df_local.columns:
+                df_local = None
+        except Exception:
+            df_local = None
+
+    df_cloud = fetch_published_sheet_data(csv_pub_url)
+
+    # 合併雲端最新資料與本機紀錄
+    dfs_to_combine = []
+    if df_local is not None and not df_local.empty:
+        dfs_to_combine.append(df_local)
+    if df_cloud is not None and not df_cloud.empty:
+        dfs_to_combine.append(df_cloud)
+
+    if dfs_to_combine:
+        try:
+            df = pd.concat(dfs_to_combine, ignore_index=True)
+            if "時間戳記" in df.columns and "個人姓名" in df.columns and "當週回報期間" in df.columns:
+                # 轉為字串避免洗掉格式
+                df["時間戳記"] = df["時間戳記"].astype(str)
                 df = df.sort_values(by="時間戳記")
                 
-                # 💡 v51 升級：1. 自動對齊與相容舊版/異構週次字串 (如舊版 Google 表單的 W1 舊日期或簡寫 W1)
+                # 自動對齊與相容週次字串
                 needs_resave = False
                 norm_periods = []
                 for orig_p in df["當週回報期間"]:
-                    norm_p = normalize_week_string(orig_p, weeks_list)
-                    if norm_p != orig_p:
+                    norm_p = normalize_week_string(str(orig_p), weeks_list)
+                    if norm_p != str(orig_p):
                         needs_resave = True
                     norm_periods.append(norm_p)
                 df["當週回報期間"] = norm_periods
 
-                # 💡 v50/v51 除錯檢查：自動檢查並校正誤選未來週次的歷史紀錄
+                # 校正誤選未來週次
                 calibrated_periods = []
                 for idx, row in df.iterrows():
                     orig_p = row["當週回報期間"]
@@ -699,24 +752,26 @@ def load_data():
                         needs_resave = True
                     calibrated_periods.append(cal_p)
                 df["當週回報期間"] = calibrated_periods
-                
+
+                # 自動補齊「本週組內共學」欄位
+                if "本週組內共學" not in df.columns:
+                    df["本週組內共學"] = "否"
+                else:
+                    df["本週組內共學"] = df["本週組內共學"].fillna("否")
+
+                # 排除重複填報：每個組員在同一週只能保留最後一筆（最新）資料
+                df = df.drop_duplicates(subset=["組別", "當週回報期間", "個人姓名"], keep="last")
+
                 if needs_resave:
                     try:
                         df.to_csv(DB_FILE, index=False, encoding='utf-8-sig')
                     except Exception:
                         pass
 
-                # 💡 自動備份保護：確保載入舊 CSV 檔時自動補齊「本週組內共學」欄位，防止舊資料缺失
-                if "本週組內共學" not in df.columns:
-                    df["本週組內共學"] = "否"
-                else:
-                    df["本週組內共學"] = df["本週組內共學"].fillna("否")
-
-                # 排除重複填報：每個組員在同一週（當週回報期間）只能保留最後一筆（最新）資料，防止統計數據虛胖
-                df = df.drop_duplicates(subset=["組別", "當週回報期間", "個人姓名"], keep="last")
-            return df
+                return df
         except Exception:
             pass
+
     # Return empty template dataframe
     return pd.DataFrame(columns=[
         "時間戳記", "組別", "保溫組長", "個人姓名", "電子郵件", 
@@ -725,7 +780,7 @@ def load_data():
         "最常出現的情緒類別", "最常用的落地方式", "本週組內共學"
     ])
 
-# Function to save record (local + cloud try)
+
 def save_record(new_row, gas_url=""):
     # 💡 v51 升級：寫入前自動進行週次字串對齊與未來週次除錯校正
     if "當週回報期間" in new_row:
