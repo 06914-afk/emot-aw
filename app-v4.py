@@ -18,6 +18,205 @@ import smtplib
 from email.mime.text import MIMEText
 from email.header import Header
 
+
+
+from fpdf import FPDF
+
+class CrossWeekPDF(FPDF):
+    def __init__(self, font_path):
+        super().__init__(orientation='L', unit='mm', format='A4')
+        self.font_path = font_path
+        self.add_font('NotoSansTC', '', font_path)
+        self.set_auto_page_break(auto=True, margin=12)
+
+    def header(self):
+        self.set_font('NotoSansTC', '', 14)
+        self.set_text_color(27, 94, 32)
+        self.cell(0, 8, '園區情緒觀察營 — 跨週數據對照矩陣報告', new_x='LMARGIN', new_y='NEXT', align='C')
+        self.set_font('NotoSansTC', '', 9)
+        self.set_text_color(100, 100, 100)
+        self.cell(0, 5, '全營 18 組歷次週別填報狀態與學習數據分析總表', new_x='LMARGIN', new_y='NEXT', align='C')
+        self.ln(2)
+
+    def footer(self):
+        self.set_y(-12)
+        self.set_font('NotoSansTC', '', 8)
+        self.set_text_color(128, 128, 128)
+        self.cell(0, 8, f'頁次：{self.page_no()}', align='C')
+
+def generate_cross_week_matrix_pdf(selected_weeks, all_data, groups_data):
+    font_path = '/usr/share/fonts/truetype/noto-cjk/NotoSansTC-Regular.ttf'
+    if not os.path.exists(font_path):
+        font_path = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
+
+    pdf = CrossWeekPDF(font_path)
+    
+    if not selected_weeks:
+        pdf.add_page()
+        pdf.set_font('NotoSansTC', '', 12)
+        pdf.cell(0, 10, '請在管理後台選取至少一個週次進行報表生成。', new_x='LMARGIN', new_y='NEXT')
+        return bytes(pdf.output())
+
+    stats_rate = {}
+    stats_sheets = {}
+    stats_colearn = {}
+    
+    week_totals = {w: {'sub': 0, 'tot': 0, 'sheets': 0, 'colearn': 0} for w in selected_weeks}
+
+    for g_name, g_info in groups_data.items():
+        stats_rate[g_name] = {}
+        stats_sheets[g_name] = {}
+        stats_colearn[g_name] = {}
+        m_list_full = g_info.get('members', [])
+        m_list_names = [m.split(' ')[1] if ' ' in m else m for m in m_list_full]
+        n_members = len(m_list_full)
+        
+        for w_full in selected_weeks:
+            if not all_data.empty and '當週回報期間' in all_data.columns:
+                df_w = all_data[all_data['當週回報期間'] == w_full]
+                df_gw = df_w[df_w['組別'] == g_name] if not df_w.empty else pd.DataFrame()
+            else:
+                df_gw = pd.DataFrame()
+                
+            sub_names = df_gw['個人姓名'].tolist() if not df_gw.empty and '個人姓名' in df_gw.columns else []
+            sub_count = len(set(sub_names) & set(m_list_names))
+            rate = (sub_count / n_members * 100) if n_members > 0 else 0.0
+            sheets = int(df_gw['當週填表張數'].sum()) if not df_gw.empty and '當週填表張數' in df_gw.columns else 0
+            colearn = len(df_gw[df_gw['本週組內共學'] == '是']) if not df_gw.empty and '本週組內共學' in df_gw.columns else 0
+            
+            stats_rate[g_name][w_full] = {'sub': sub_count, 'tot': n_members, 'rate': rate}
+            stats_sheets[g_name][w_full] = sheets
+            stats_colearn[g_name][w_full] = colearn
+            
+            week_totals[w_full]['sub'] += sub_count
+            week_totals[w_full]['tot'] += n_members
+            week_totals[w_full]['sheets'] += sheets
+            week_totals[w_full]['colearn'] += colearn
+
+    max_weeks_per_page = 8
+    week_chunks = [selected_weeks[i:i + max_weeks_per_page] for i in range(0, len(selected_weeks), max_weeks_per_page)]
+    now_str = pd.Timestamp.now().strftime('%Y/%m/%d %H:%M')
+
+    tables_config = [
+        ('【一、各組歷次週別 — 填寫人數與填報率對照矩陣】', 'rate'),
+        ('【二、各組歷次週別 — 當週填表總張數對照矩陣】', 'sheets'),
+        ('【三、各組歷次週別 — 組內共學出席人數對照矩陣】', 'colearn')
+    ]
+
+    for table_title, metric_type in tables_config:
+        for chunk_idx, w_chunk in enumerate(week_chunks):
+            pdf.add_page()
+            
+            pdf.set_font('NotoSansTC', '', 10)
+            pdf.set_text_color(50, 50, 50)
+            start_w = w_chunk[0].split(' (')[0]
+            end_w = w_chunk[-1].split(' (')[0]
+            chunk_range_str = f'{start_w} ~ {end_w}' if len(w_chunk) > 1 else start_w
+            pdf.cell(0, 6, f'選定區間：【{chunk_range_str}】 (第 {chunk_idx+1}/{len(week_chunks)} 頁組)  |  匯出時間：{now_str}', new_x='LMARGIN', new_y='NEXT')
+            pdf.ln(1)
+            
+            group_col_w = 22
+            leader_col_w = 26
+            avg_col_w = 26
+            num_w = len(w_chunk)
+            avail_w = 277 - group_col_w - leader_col_w - avg_col_w
+            week_col_w = avail_w / num_w
+            
+            pdf.set_font('NotoSansTC', '', 11)
+            pdf.set_text_color(27, 94, 32)
+            pdf.cell(0, 7, table_title, new_x='LMARGIN', new_y='NEXT')
+            
+            # Header
+            pdf.set_fill_color(27, 94, 32)
+            pdf.set_text_color(255, 255, 255)
+            pdf.set_font('NotoSansTC', '', 9)
+            pdf.cell(group_col_w, 7, '組別', border=1, align='C', fill=True)
+            pdf.cell(leader_col_w, 7, '保溫組長', border=1, align='C', fill=True)
+            for w_full in w_chunk:
+                pdf.cell(week_col_w, 7, w_full.split(' (')[0], border=1, align='C', fill=True)
+            
+            col_tail_name = '區間平均率' if metric_type == 'rate' else ('區間累計張數' if metric_type == 'sheets' else '區間累計共學')
+            pdf.cell(avg_col_w, 7, col_tail_name, border=1, align='C', fill=True)
+            pdf.ln()
+
+            # Rows
+            pdf.set_font('NotoSansTC', '', 8.5)
+            row_count = 0
+            for g_name, g_info in groups_data.items():
+                fill = (row_count % 2 == 1)
+                pdf.set_fill_color(245, 247, 245) if fill else pdf.set_fill_color(255, 255, 255)
+                pdf.set_text_color(30, 30, 30)
+                pdf.cell(group_col_w, 6.5, g_name, border=1, align='C', fill=True)
+                pdf.cell(leader_col_w, 6.5, str(g_info.get('leader', ''))[:8], border=1, align='C', fill=True)
+                
+                g_tot_metric = 0
+                g_tot_denom = 0
+                for w_full in w_chunk:
+                    if metric_type == 'rate':
+                        st = stats_rate[g_name][w_full]
+                        cell_str = f"{st['sub']}/{st['tot']} ({st['rate']:.0f}%)"
+                        g_tot_metric += st['sub']
+                        g_tot_denom += st['tot']
+                    elif metric_type == 'sheets':
+                        sh = stats_sheets[g_name][w_full]
+                        cell_str = f'{sh} 張'
+                        g_tot_metric += sh
+                    else: # colearn
+                        cl = stats_colearn[g_name][w_full]
+                        cell_str = f'{cl} 人'
+                        g_tot_metric += cl
+                        
+                    pdf.cell(week_col_w, 6.5, cell_str, border=1, align='C', fill=True)
+                    
+                if metric_type == 'rate':
+                    avg_val_str = f'{(g_tot_metric/g_tot_denom*100):.1f}%' if g_tot_denom > 0 else '0.0%'
+                elif metric_type == 'sheets':
+                    avg_val_str = f'{g_tot_metric} 張'
+                else:
+                    avg_val_str = f'{g_tot_metric} 人'
+                    
+                pdf.cell(avg_col_w, 6.5, avg_val_str, border=1, align='C', fill=True)
+                pdf.ln()
+                row_count += 1
+                
+            # Totals
+            pdf.set_fill_color(225, 238, 226)
+            pdf.set_font('NotoSansTC', '', 8.5)
+            pdf.set_text_color(27, 94, 32)
+            tot_label = '全營總計 / 平均填報率' if metric_type == 'rate' else ('全營當週總填表張數' if metric_type == 'sheets' else '全營當週總共學人數')
+            pdf.cell(group_col_w + leader_col_w, 7, tot_label, border=1, align='C', fill=True)
+            
+            chunk_tot_metric = 0
+            chunk_tot_denom = 0
+            for w_full in w_chunk:
+                wt = week_totals[w_full]
+                if metric_type == 'rate':
+                    w_rate = (wt['sub'] / wt['tot'] * 100) if wt['tot'] > 0 else 0.0
+                    cell_str = f"{wt['sub']}/{wt['tot']} ({w_rate:.0f}%)"
+                    chunk_tot_metric += wt['sub']
+                    chunk_tot_denom += wt['tot']
+                elif metric_type == 'sheets':
+                    cell_str = f"{wt['sheets']} 張"
+                    chunk_tot_metric += wt['sheets']
+                else:
+                    cell_str = f"{wt['colearn']} 人"
+                    chunk_tot_metric += wt['colearn']
+                    
+                pdf.cell(week_col_w, 7, cell_str, border=1, align='C', fill=True)
+                
+            if metric_type == 'rate':
+                tot_val_str = f'{(chunk_tot_metric/chunk_tot_denom*100):.1f}%' if chunk_tot_denom > 0 else '0.0%'
+            elif metric_type == 'sheets':
+                tot_val_str = f'{chunk_tot_metric} 張'
+            else:
+                tot_val_str = f'{chunk_tot_metric} 人'
+                
+            pdf.cell(avg_col_w, 7, tot_val_str, border=1, align='C', fill=True)
+            pdf.ln()
+
+    return bytes(pdf.output())
+
+
 # Set page config for web app
 st.set_page_config(
     page_title="園區情緒觀察營 週總結回報平台",
@@ -2687,6 +2886,83 @@ elif role == "📊 總窗口後台管理":
                     key="download_18_groups_zip_report_btn"
                 )
                 st.caption("💡 內含 18 份獨立 Word 檔，方便分發給各組組長。")
+
+            # 💡 v67 升級：全營歷次週別對照矩陣 (跨週對照表) PDF 匯出專區
+            st.write("---")
+            st.markdown("### 📈 全營歷次週別對照矩陣 (跨週對照表) PDF 匯出專區")
+            st.caption("您可以選擇欲對照的回報週別範圍，系統將自動彙整全營 18 組在各週的『填報人數與填報率』、『當週填表張數』與『組內共學人數』等三大核心矩陣指標，並匯出為高質感 A4 橫向 PDF 總表。")
+            
+            col_mw1, col_mw2 = st.columns(2)
+            with col_mw1:
+                admin_start_wk = st.selectbox("請選擇『起始週別』：", selectable_weeks, index=0, key="admin_matrix_start_wk")
+            with col_mw2:
+                admin_end_wk = st.selectbox("請選擇『結束週別』：", selectable_weeks, index=default_week_idx, key="admin_matrix_end_wk")
+
+            try:
+                idx1 = selectable_weeks.index(admin_start_wk)
+                idx2 = selectable_weeks.index(admin_end_wk)
+                if idx1 <= idx2:
+                    selected_matrix_weeks = selectable_weeks[idx1:idx2+1]
+                else:
+                    selected_matrix_weeks = selectable_weeks[idx2:idx1+1]
+            except Exception:
+                selected_matrix_weeks = selectable_weeks[0:default_week_idx+1]
+
+            if selected_matrix_weeks:
+                start_wk_lbl = selected_matrix_weeks[0].split(' (')[0]
+                end_wk_lbl = selected_matrix_weeks[-1].split(' (')[0]
+                
+                pdf_matrix_bytes = generate_cross_week_matrix_pdf(
+                    selected_weeks=selected_matrix_weeks,
+                    all_data=df,
+                    groups_data=groups_data
+                )
+                
+                btn_m1, btn_m2 = st.columns([1, 1])
+                with btn_m1:
+                    st.download_button(
+                        label=f"📄 導出全營跨週對照矩陣報告 (.pdf) 【{start_wk_lbl} ~ {end_wk_lbl}】",
+                        data=pdf_matrix_bytes,
+                        file_name=f"園區情緒觀察營_全營跨週對照矩陣報告_{start_wk_lbl}_至_{end_wk_lbl}.pdf",
+                        mime="application/pdf",
+                        key="download_cross_week_matrix_pdf_btn"
+                    )
+                    st.caption("💡 導出之 PDF 包含全營 18 組於選定區間之『填報人數/填報率』、『當週總填表張數』與『組內共學人數』三大跨週對照表。")
+                    
+                with btn_m2:
+                    st.info(f"📊 目前選定比對區間：**{start_wk_lbl} ~ {end_wk_lbl}**（涵蓋 {len(selected_matrix_weeks)} 個週次）")
+
+                with st.expander(f"🔍 點此預覽全營 18 組跨週填報率對照矩陣 ({start_wk_lbl} ~ {end_wk_lbl})"):
+                    preview_rows = []
+                    for g_name, g_info in groups_data.items():
+                        row_dict = {"組別": g_name, "保溫組長": g_info["leader"]}
+                        m_list = g_info["members"]
+                        m_names = [m.split(" ")[1] if " " in m else m for m in m_list]
+                        tot_m = len(m_list)
+                        
+                        sub_sum = 0
+                        for wk_f in selected_matrix_weeks:
+                            wk_short = wk_f.split(" (")[0]
+                            if not df.empty and "當週回報期間" in df.columns:
+                                df_w = df[df["當週回報期間"] == wk_f]
+                                df_gw = df_w[df_w["組別"] == g_name] if not df_w.empty else pd.DataFrame()
+                            else:
+                                df_gw = pd.DataFrame()
+                            sub_names = df_gw["個人姓名"].tolist() if not df_gw.empty and "個人姓名" in df_gw.columns else []
+                            s_cnt = len(set(sub_names) & set(m_names))
+                            sub_sum += s_cnt
+                            rate = (s_cnt / tot_m * 100) if tot_m > 0 else 0.0
+                            row_dict[wk_short] = f"{s_cnt}/{tot_m} ({rate:.0f}%)"
+                        
+                        avg_rate = (sub_sum / (tot_m * len(selected_matrix_weeks)) * 100) if tot_m * len(selected_matrix_weeks) > 0 else 0.0
+                        row_dict["區間平均率"] = f"{avg_rate:.1f}%"
+                        preview_rows.append(row_dict)
+                        
+                    preview_df = pd.DataFrame(preview_rows).set_index("組別")
+                    st.table(preview_df)
+            else:
+                st.warning("⚠️ 請至少選擇一個週次以生成對照矩陣 PDF 報告。")
+
         else:
             st.warning("⚠️ 尚無任何數據，無法生成填寫率評估。")
         
