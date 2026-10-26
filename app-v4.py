@@ -47,7 +47,7 @@ if HAS_FPDF:
             self.cell(0, 8, '園區情緒觀察營 — 跨週數據對照矩陣報告', new_x='LMARGIN', new_y='NEXT', align='C')
             self.set_font('NotoSansTC', '', 9)
             self.set_text_color(100, 100, 100)
-            self.cell(0, 5, '全營 19 組歷次週別填報狀態與學習數據分析總表', new_x='LMARGIN', new_y='NEXT', align='C')
+            self.cell(0, 5, '全營 18 組歷次週別填報狀態與學習數據分析總表', new_x='LMARGIN', new_y='NEXT', align='C')
             self.ln(2)
 
         def footer(self):
@@ -88,7 +88,7 @@ def generate_cross_week_matrix_docx(selected_weeks, all_data, groups_data):
 
     # 1. Rate Matrix
     p_h1 = doc.add_paragraph()
-    r_h1 = p_h1.add_run("📊 矩陣一：全營 19 組「填寫人數與填報率」跨週對照表")
+    r_h1 = p_h1.add_run("📊 矩陣一：全營 18 組「填寫人數與填報率」跨週對照表")
     r_h1.bold = True
     r_h1.font.size = Pt(14)
     r_h1.font.color.rgb = RGBColor(27, 94, 32)
@@ -798,12 +798,6 @@ groups_data = {
             "8-1 楊婉君", "8-2 林宗平", "8-3 吳欣緯", "8-4 陳秋芬", "8-5 王怡誠", "8-6 王麗景", "8-7 章玲珠", "8-8 李瓊華", "8-9 劉燕冰", "8-10 盧菀萱", "8-11 李淑瑛", "8-12 楊素粉", "8-13 劉筱愛", "8-14 盧彥妤", "8-15 明子又", "8-16 黃翠月", "8-17 賴香雪", "8-18 蘇郁合", "8-19 蘇國樑", "8-20 廖孟鴻"
         ]
     },
-    "第 9 組": {
-        "leader": "林如玉",
-        "members": [
-            "9-1 林如玉", "9-2 林淑娟", "9-3 余雅玲", "9-4 李慧瑛", "9-5 辛天送", "9-6 白秀清", "9-7 莊淑娟", "9-8 游建邦", "9-9 黃惠卿", "9-10 蔡純慧", "9-11 洪雅玲", "9-12 李宛融", "9-13 徐惠美", "9-14 周珈漩", "9-15 許湘惠", "9-16 周林美麗", "9-17 何苑色", "9-18 李俊宏", "9-19 喻榮華", "9-20 柳書玉", "9-21 蘇鴻濱", "9-22 吳秋燕", "9-23 林淑萍", "9-24 陳惠珠", "9-25 葉靜宜"
-        ]
-    },
     "第 10 組": {
         "leader": "黃振育",
         "members": [
@@ -819,7 +813,7 @@ groups_data = {
     "第 12 組": {
         "leader": "邱品瑄",
         "members": [
-            "12-1 邱品瑄", "12-2 賴盈達", "12-3 陳雅惠", "12-4 江佳怡", "12-5 孫詩旻", "12-6 謝秀枝", "12-7 周素仰", "12-8 陳昭華", "12-9 簡達謙", "12-10 潘志滿", "12-11 童小鈴", "12-12 蔡宗涵", "12-13 蔡麗滿", "12-14 王冠蕙", "12-15 洪唯", "12-16 何淑琴", "12-17 顏妙如", "12-18 楊紫璿", "12-19 李淑芬", "12-20 洪金城"
+            "12-1 邱品瑄", "12-2 賴盈達", "12-3 陳雅惠", "12-4 江佳怡", "12-5 孫詩旻", "12-6 謝秀枝", "12-7 周素仰", "12-8 陳昭華", "12-9 簡達謙", "12-10 潘志滿", "12-11 童小鈴", "12-12 蔡宗涵", "12-13 蔡麗滿", "12-14 王冠蕙", "12-15 洪唯", "12-16 何淑琴", "12-17 顏妙如", "12-18 楊紫璿", "12-19 李淑芬", "12-20 洪金城", "12-21 朱穆鳳"
         ]
     },
     "第 13 組": {
@@ -842,7 +836,7 @@ groups_data = {
     },
     "第 16 組": {
         "leader": "偕魁元",
-        "members": [
+        'members': [
             "16-1 偕魁元", "16-2 李庭安", "16-3 劉妙娟", "16-4 沈承宗", "16-5 蔡雅雅", "16-6 凃文鳳", "16-7 莊雅惠", "16-8 劉巧領", "16-9 鄭雅文", "16-10 湯玉琦", "16-11 劉姿吟", "16-12 蕭茲方", "16-13 王芳珠", "16-14 陳冠同", "16-15 林秀菁", "16-16 黃政和", "16-17 徐友信", "16-18 吳莉惠", "16-19 林宜筠", "16-20 陳威志", "16-21 彭翠琴"
         ]
     },
@@ -865,7 +859,6 @@ groups_data = {
         ]
     }
 }
-
 # Fixed typos / mapping adjustments
 groups_data["第 1 組"]["members"][7] = "1-8 郭瓈灧"
 groups_data["第 11 組"]["members"][10] = "11-11 蘇相瑜"
@@ -1162,7 +1155,7 @@ def save_record(new_row, gas_url=""):
     return True, "成功"
 
 # Define passwords for group leaders (leader01 ~ leader18) and admin (admin2026)
-leader_passwords = {f"第 {i} 組": f"leader{i:02d}" for i in range(1, 20)}
+leader_passwords = {f"第 {i} 組": f"leader{i:02d}" for i in range(1, 19)}
 admin_password = "admin2026"
 
 
@@ -1208,7 +1201,7 @@ def summarize_to_one_sentence(feedback_text):
             
     return first_sent
 
-def generate_19_groups_zip_reports(week, all_data, groups_data):
+def generate_18_groups_zip_reports(week, all_data, groups_data):
     target_wk_label = week.split(' (')[0]
     wk_sub_all = all_data[all_data["當週回報期間"] == week] if not all_data.empty else pd.DataFrame()
     
@@ -1315,7 +1308,7 @@ def generate_all_groups_docx_report(week, all_data, groups_data):
     # 1. Main Title
     p_title = doc.add_paragraph()
     p_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run_title = p_title.add_run(f"📋 園區情緒觀察營 — 全營 19 組每週總結報告")
+    run_title = p_title.add_run(f"📋 園區情緒觀察營 — 全營 18 組每週總結報告")
     run_title.font.name = 'Microsoft JhengHei'
     run_title.font.size = Pt(18)
     run_title.bold = True
@@ -1332,7 +1325,7 @@ def generate_all_groups_docx_report(week, all_data, groups_data):
     
     # 2. Executive Summary Table Across All 18 Groups
     h_sum = doc.add_paragraph()
-    run_h_sum = h_sum.add_run("📊 全營 19 組填寫率快速評估")
+    run_h_sum = h_sum.add_run("📊 全營 18 組填寫率快速評估")
     run_h_sum.font.size = Pt(14)
     run_h_sum.bold = True
     run_h_sum.font.color.rgb = RGBColor(27, 94, 32)
@@ -1418,7 +1411,7 @@ def generate_all_groups_docx_report(week, all_data, groups_data):
     total_rate = (total_camp_sub / total_camp_m) * 100 if total_camp_m > 0 else 0
     avg_camp_sheets = (total_camp_sheets / total_camp_m) if total_camp_m > 0 else 0.0
     tot_cells = table_exec.add_row().cells
-    tot_vals = ["全營總計", "全營 19 組", str(total_camp_m), str(total_camp_sub), str(total_camp_unsub), f"{total_camp_co_learn} 人", f"{total_camp_sheets} 張", f"{avg_camp_sheets:.1f} 張/人", f"{total_rate:.1f}%"]
+    tot_vals = ["全營總計", "全營 18 組", str(total_camp_m), str(total_camp_sub), str(total_camp_unsub), f"{total_camp_co_learn} 人", f"{total_camp_sheets} 張", f"{avg_camp_sheets:.1f} 張/人", f"{total_rate:.1f}%"]
     for i, val in enumerate(tot_vals):
         tot_cells[i].text = val
         tot_cells[i].width = cols_exec[i][1]
@@ -2970,7 +2963,7 @@ elif role == "📊 總窗口後台管理":
         
         # 1. Weekly Completion Rate Assessment
         st.markdown("---")
-        st.markdown("### 📊 全營 19 組填寫率快速評估")
+        st.markdown("### 📊 全營 18 組填寫率快速評估")
         
         target_report_week = st.selectbox("請選擇您要彙整的「目標週別」 *", selectable_weeks, index=default_week_idx)
         
@@ -3006,11 +2999,11 @@ elif role == "📊 總窗口後台管理":
             stats_df = pd.DataFrame(rows_stats)
             st.table(stats_df[["組別", "保溫組長", "應填人數", "已填人數", "未填人數", "共學人數", "當週填表張數", "平均每人填表數", "填報率"]].set_index("組別"))
             
-            # 💡 v45 升級：總窗口一鍵導出全營總報告 (.docx) 與 打包生成 19 組個別組長報告 (.zip)
+            # 💡 v45 升級：總窗口一鍵導出全營總報告 (.docx) 與 打包生成 18 組個別組長報告 (.zip)
             target_wk_label = target_report_week.split(' (')[0]
             st.write("---")
             st.markdown(f"### 📝 總窗口報告一鍵導出與打包專區【{target_wk_label}】")
-            st.caption("支援一鍵導出包含全營 19 組評估與心得條列之『全營總報告』，或直接打包生成 19 份各組獨立之『組長 Word 報告 ZIP 檔』。")
+            st.caption("支援一鍵導出包含全營 18 組評估與心得條列之『全營總報告』，或直接打包生成 18 份各組獨立之『組長 Word 報告 ZIP 檔』。")
             
             doc_all_bio = generate_all_groups_docx_report(
                 week=target_report_week,
@@ -3018,7 +3011,7 @@ elif role == "📊 總窗口後台管理":
                 groups_data=groups_data
             )
             
-            zip_18_bio = generate_19_groups_zip_reports(
+            zip_18_bio = generate_18_groups_zip_reports(
                 week=target_report_week,
                 all_data=df,
                 groups_data=groups_data
@@ -3027,9 +3020,9 @@ elif role == "📊 總窗口後台管理":
             btn_col_a1, btn_col_a2 = st.columns([1, 1])
             with btn_col_a1:
                 st.download_button(
-                    label="📥 導出全營 19 組總總結報告 (.docx)",
+                    label="📥 導出全營 18 組總總結報告 (.docx)",
                     data=doc_all_bio,
-                    file_name=f"園區情緒觀察營_全營19組總心得報告_{target_wk_label}.docx",
+                    file_name=f"園區情緒觀察營_全營18組總心得報告_{target_wk_label}.docx",
                     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                     key="download_all_groups_docx_report_btn"
                 )
@@ -3037,18 +3030,18 @@ elif role == "📊 總窗口後台管理":
                 
             with btn_col_a2:
                 st.download_button(
-                    label="📦 打包下載 19 組個別組長報告 (.zip)",
+                    label="📦 打包下載 18 組個別組長報告 (.zip)",
                     data=zip_18_bio,
                     file_name=f"園區情緒觀察營_18組個別組長報告_{target_wk_label}.zip",
                     mime="application/zip",
                     key="download_18_groups_zip_report_btn"
                 )
-                st.caption("💡 內含 19 份獨立 Word 檔，方便分發給各組組長。")
+                st.caption("💡 內含 18 份獨立 Word 檔，方便分發給各組組長。")
 
             # 💡 v67 升級：全營歷次週別對照矩陣 (跨週對照表) PDF 匯出專區
             st.write("---")
             st.markdown("### 📈 全營歷次週別對照矩陣 (跨週對照表) PDF 匯出專區")
-            st.caption("您可以選擇欲對照的回報週別範圍，系統將自動彙整全營 19 組在各週的『填報人數與填報率』、『當週填表張數』與『組內共學人數』等三大核心矩陣指標，並匯出為高質感 A4 橫向 PDF 總表。")
+            st.caption("您可以選擇欲對照的回報週別範圍，系統將自動彙整全營 18 組在各週的『填報人數與填報率』、『當週填表張數』與『組內共學人數』等三大核心矩陣指標，並匯出為高質感 A4 橫向 PDF 總表。")
             
             col_mw1, col_mw2 = st.columns(2)
             with col_mw1:
@@ -3088,12 +3081,12 @@ elif role == "📊 總窗口後台管理":
                         )
                     else:
                         st.warning("請導出 Word 報表 (.docx)")
-                    st.caption("💡 導出之 PDF 包含全營 19 組於選定區間之『填報人數/填報率』、『當週總填表張數』與『組內共學人數』三大跨週對照表。")
+                    st.caption("💡 導出之 PDF 包含全營 18 組於選定區間之『填報人數/填報率』、『當週總填表張數』與『組內共學人數』三大跨週對照表。")
                     
                 with btn_m2:
                     st.info(f"📊 目前選定比對區間：**{start_wk_lbl} ~ {end_wk_lbl}**（涵蓋 {len(selected_matrix_weeks)} 個週次）")
 
-                with st.expander(f"🔍 點此預覽全營 19 組跨週填報率對照矩陣 ({start_wk_lbl} ~ {end_wk_lbl})"):
+                with st.expander(f"🔍 點此預覽全營 18 組跨週填報率對照矩陣 ({start_wk_lbl} ~ {end_wk_lbl})"):
                     preview_rows = []
                     for g_name, g_info in groups_data.items():
                         row_dict = {"組別": g_name, "保溫組長": g_info["leader"]}
