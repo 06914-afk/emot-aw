@@ -191,361 +191,6 @@ def get_cjk_font_path():
             pass
     return None
 
-
-def generate_cross_week_matrix_xlsx(selected_weeks, all_data, groups_data):
-    try:
-        import openpyxl
-        from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
-        from openpyxl.utils import get_column_letter
-    except ImportError:
-        return None
-
-    try:
-        wb = openpyxl.Workbook()
-        wb.remove(wb.active)
-
-        font_title = Font(name="Microsoft JhengHei", size=15, bold=True, color="1B5E20")
-        font_subtitle = Font(name="Microsoft JhengHei", size=10, italic=True, color="555555")
-        font_header = Font(name="Microsoft JhengHei", size=10, bold=True, color="FFFFFF")
-        font_body = Font(name="Microsoft JhengHei", size=9.5)
-        font_bold = Font(name="Microsoft JhengHei", size=9.5, bold=True)
-        font_total = Font(name="Microsoft JhengHei", size=10, bold=True, color="1B5E20")
-
-        fill_header = PatternFill(start_color="1B5E20", end_color="1B5E20", fill_type="solid")
-        fill_alt = PatternFill(start_color="F5F7F5", end_color="F5F7F5", fill_type="solid")
-        fill_total = PatternFill(start_color="E1EEE2", end_color="E1EEE2", fill_type="solid")
-
-        thin_border = Border(
-            left=Side(style='thin', color='D0D0D0'),
-            right=Side(style='thin', color='D0D0D0'),
-            top=Side(style='thin', color='D0D0D0'),
-            bottom=Side(style='thin', color='D0D0D0')
-        )
-        align_center = Alignment(horizontal='center', vertical='center')
-
-        wk_labels = [w.split(' (')[0] for w in selected_weeks]
-        now_str = datetime.datetime.now(pytz.timezone('Asia/Taipei')).strftime('%Y-%m-%d %H:%M')
-
-        # Sheet 1: 填報率對照表
-        ws1 = wb.create_sheet(title="填報率對照表")
-        ws1.cell(row=1, column=1, value="🌸 園區情緒觀察營 — 各組『填寫人數與填報率』跨週對照矩陣表").font = font_title
-        ws1.cell(row=2, column=1, value=f"統計區間：{', '.join(wk_labels)}  |  產出時間：{now_str}").font = font_subtitle
-
-        headers1 = ["組別", "保溫組長", "應填人數"] + wk_labels + ["區間平均填報率"]
-        for col_idx, h in enumerate(headers1, 1):
-            cell = ws1.cell(row=4, column=col_idx, value=h)
-            cell.font = font_header
-            cell.fill = fill_header
-            cell.alignment = align_center
-            cell.border = thin_border
-
-        curr_row = 5
-        wk_tot_sub = {w: 0 for w in selected_weeks}
-        wk_tot_mem = {w: 0 for w in selected_weeks}
-
-        for row_i, (g_name, g_info) in enumerate(groups_data.items()):
-            m_list = g_info.get("members", [])
-            m_names = [m.split(" ")[1] if " " in m else m for m in m_list]
-            tot_m = len(m_list)
-            fill_curr = fill_alt if row_i % 2 == 1 else PatternFill(fill_type=None)
-
-            c1 = ws1.cell(row=curr_row, column=1, value=g_name)
-            c2 = ws1.cell(row=curr_row, column=2, value=g_info.get("leader", ""))
-            c3 = ws1.cell(row=curr_row, column=3, value=f"{tot_m} 人")
-            for c in (c1, c2, c3):
-                c.font = font_body
-                c.alignment = align_center
-                c.border = thin_border
-                if row_i % 2 == 1: c.fill = fill_curr
-
-            sub_sum = 0
-            for idx, wk in enumerate(selected_weeks):
-                wk_sub = all_data[(all_data["當週回報期間"] == wk) & (all_data["組別"] == g_name)] if not all_data.empty else pd.DataFrame()
-                sub_names = wk_sub["個人姓名"].tolist() if not wk_sub.empty else []
-                s_cnt = len(set(sub_names) & set(m_names))
-                sub_sum += s_cnt
-                wk_tot_sub[wk] += s_cnt
-                wk_tot_mem[wk] += tot_m
-                rate = (s_cnt / tot_m * 100) if tot_m > 0 else 0.0
-
-                cell = ws1.cell(row=curr_row, column=4 + idx, value=f"{s_cnt}/{tot_m} ({rate:.0f}%)")
-                cell.font = font_body
-                cell.alignment = align_center
-                cell.border = thin_border
-                if row_i % 2 == 1: cell.fill = fill_curr
-
-            avg_rate = (sub_sum / (tot_m * len(selected_weeks)) * 100) if tot_m * len(selected_weeks) > 0 else 0.0
-            cell_tail = ws1.cell(row=curr_row, column=4 + len(selected_weeks), value=f"{avg_rate:.1f}%")
-            cell_tail.font = font_bold
-            cell_tail.alignment = align_center
-            cell_tail.border = thin_border
-            if row_i % 2 == 1: cell_tail.fill = fill_curr
-            curr_row += 1
-
-        # Total Row
-        c1 = ws1.cell(row=curr_row, column=1, value="全營總計 / 平均填報率")
-        ws1.merge_cells(start_row=curr_row, start_column=1, end_row=curr_row, end_column=3)
-        c1.font = font_total
-        c1.fill = fill_total
-        c1.alignment = align_center
-
-        for col_i in range(1, 4):
-            ws1.cell(row=curr_row, column=col_i).border = thin_border
-            ws1.cell(row=curr_row, column=col_i).fill = fill_total
-
-        tot_sub_all = 0
-        tot_mem_all = 0
-        for idx, wk in enumerate(selected_weeks):
-            s_tot = wk_tot_sub[wk]
-            m_tot = wk_tot_mem[wk]
-            tot_sub_all += s_tot
-            tot_mem_all += m_tot
-            r_tot = (s_tot / m_tot * 100) if m_tot > 0 else 0.0
-            cell = ws1.cell(row=curr_row, column=4 + idx, value=f"{s_tot}/{m_tot} ({r_tot:.0f}%)")
-            cell.font = font_total
-            cell.fill = fill_total
-            cell.alignment = align_center
-            cell.border = thin_border
-
-        avg_tot_rate = (tot_sub_all / tot_mem_all * 100) if tot_mem_all > 0 else 0.0
-        cell_tail = ws1.cell(row=curr_row, column=4 + len(selected_weeks), value=f"{avg_tot_rate:.1f}%")
-        cell_tail.font = font_total
-        cell_tail.fill = fill_total
-        cell_tail.alignment = align_center
-        cell_tail.border = thin_border
-
-        # Sheet 2: 填表張數對照表
-        ws2 = wb.create_sheet(title="填表張數對照表")
-        ws2.cell(row=1, column=1, value="🌸 園區情緒觀察營 — 各組『當週填表總張數』跨週對照矩陣表").font = font_title
-        ws2.cell(row=2, column=1, value=f"統計區間：{', '.join(wk_labels)}  |  產出時間：{now_str}").font = font_subtitle
-
-        headers2 = ["組別", "保溫組長"] + wk_labels + ["區間累計總張數"]
-        for col_idx, h in enumerate(headers2, 1):
-            cell = ws2.cell(row=4, column=col_idx, value=h)
-            cell.font = font_header
-            cell.fill = fill_header
-            cell.alignment = align_center
-            cell.border = thin_border
-
-        curr_row = 5
-        wk_tot_sheets = {w: 0 for w in selected_weeks}
-
-        for row_i, (g_name, g_info) in enumerate(groups_data.items()):
-            fill_curr = fill_alt if row_i % 2 == 1 else PatternFill(fill_type=None)
-            c1 = ws2.cell(row=curr_row, column=1, value=g_name)
-            c2 = ws2.cell(row=curr_row, column=2, value=g_info.get("leader", ""))
-            for c in (c1, c2):
-                c.font = font_body
-                c.alignment = align_center
-                c.border = thin_border
-                if row_i % 2 == 1: c.fill = fill_curr
-
-            row_sheets_sum = 0
-            for idx, wk in enumerate(selected_weeks):
-                wk_sub = all_data[(all_data["當週回報期間"] == wk) & (all_data["組別"] == g_name)] if not all_data.empty else pd.DataFrame()
-                sh_cnt = int(wk_sub["當週填表張數"].sum()) if not wk_sub.empty and "當週填表張數" in wk_sub.columns else 0
-                row_sheets_sum += sh_cnt
-                wk_tot_sheets[wk] += sh_cnt
-
-                cell = ws2.cell(row=curr_row, column=3 + idx, value=f"{sh_cnt} 張")
-                cell.font = font_body
-                cell.alignment = align_center
-                cell.border = thin_border
-                if row_i % 2 == 1: cell.fill = fill_curr
-
-            cell_tail = ws2.cell(row=curr_row, column=3 + len(selected_weeks), value=f"{row_sheets_sum} 張")
-            cell_tail.font = font_bold
-            cell_tail.alignment = align_center
-            cell_tail.border = thin_border
-            if row_i % 2 == 1: cell_tail.fill = fill_curr
-            curr_row += 1
-
-        # Total Row Sheet 2
-        c1 = ws2.cell(row=curr_row, column=1, value="全營當週總填表張數")
-        ws2.merge_cells(start_row=curr_row, start_column=1, end_row=curr_row, end_column=2)
-        c1.font = font_total
-        c1.fill = fill_total
-        c1.alignment = align_center
-        ws2.cell(row=curr_row, column=2).border = thin_border
-        ws2.cell(row=curr_row, column=2).fill = fill_total
-
-        camp_sheets_all = 0
-        for idx, wk in enumerate(selected_weeks):
-            s_tot = wk_tot_sheets[wk]
-            camp_sheets_all += s_tot
-            cell = ws2.cell(row=curr_row, column=3 + idx, value=f"{s_tot} 張")
-            cell.font = font_total
-            cell.fill = fill_total
-            cell.alignment = align_center
-            cell.border = thin_border
-
-        cell_tail = ws2.cell(row=curr_row, column=3 + len(selected_weeks), value=f"{camp_sheets_all} 張")
-        cell_tail.font = font_total
-        cell_tail.fill = fill_total
-        cell_tail.alignment = align_center
-        cell_tail.border = thin_border
-
-        # Sheet 3: 共學人數對照表
-        ws3 = wb.create_sheet(title="共學人數對照表")
-        ws3.cell(row=1, column=1, value="🌸 園區情緒觀察營 — 各組『組內共學出席人數』跨週對照矩陣表").font = font_title
-        ws3.cell(row=2, column=1, value=f"統計區間：{', '.join(wk_labels)}  |  產出時間：{now_str}").font = font_subtitle
-
-        headers3 = ["組別", "保溫組長"] + wk_labels + ["區間累計共學人次"]
-        for col_idx, h in enumerate(headers3, 1):
-            cell = ws3.cell(row=4, column=col_idx, value=h)
-            cell.font = font_header
-            cell.fill = fill_header
-            cell.alignment = align_center
-            cell.border = thin_border
-
-        curr_row = 5
-        wk_tot_colearn = {w: 0 for w in selected_weeks}
-
-        for row_i, (g_name, g_info) in enumerate(groups_data.items()):
-            fill_curr = fill_alt if row_i % 2 == 1 else PatternFill(fill_type=None)
-            c1 = ws3.cell(row=curr_row, column=1, value=g_name)
-            c2 = ws3.cell(row=curr_row, column=2, value=g_info.get("leader", ""))
-            for c in (c1, c2):
-                c.font = font_body
-                c.alignment = align_center
-                c.border = thin_border
-                if row_i % 2 == 1: c.fill = fill_curr
-
-            row_colearn_sum = 0
-            for idx, wk in enumerate(selected_weeks):
-                wk_sub = all_data[(all_data["當週回報期間"] == wk) & (all_data["組別"] == g_name)] if not all_data.empty else pd.DataFrame()
-                cl_cnt = len(wk_sub[wk_sub["本週組內共學"] == "是"]) if not wk_sub.empty and "本週組內共學" in wk_sub.columns else 0
-                row_colearn_sum += cl_cnt
-                wk_tot_colearn[wk] += cl_cnt
-
-                cell = ws3.cell(row=curr_row, column=3 + idx, value=f"{cl_cnt} 人")
-                cell.font = font_body
-                cell.alignment = align_center
-                cell.border = thin_border
-                if row_i % 2 == 1: cell.fill = fill_curr
-
-            cell_tail = ws3.cell(row=curr_row, column=3 + len(selected_weeks), value=f"{row_colearn_sum} 人次")
-            cell_tail.font = font_bold
-            cell_tail.alignment = align_center
-            cell_tail.border = thin_border
-            if row_i % 2 == 1: cell_tail.fill = fill_curr
-            curr_row += 1
-
-        # Total Row Sheet 3
-        c1 = ws3.cell(row=curr_row, column=1, value="全營當週總共學人數")
-        ws3.merge_cells(start_row=curr_row, start_column=1, end_row=curr_row, end_column=2)
-        c1.font = font_total
-        c1.fill = fill_total
-        c1.alignment = align_center
-        ws3.cell(row=curr_row, column=2).border = thin_border
-        ws3.cell(row=curr_row, column=2).fill = fill_total
-
-        camp_colearn_all = 0
-        for idx, wk in enumerate(selected_weeks):
-            cl_tot = wk_tot_colearn[wk]
-            camp_colearn_all += cl_tot
-            cell = ws3.cell(row=curr_row, column=3 + idx, value=f"{cl_tot} 人")
-            cell.font = font_total
-            cell.fill = fill_total
-            cell.alignment = align_center
-            cell.border = thin_border
-
-        cell_tail = ws3.cell(row=curr_row, column=3 + len(selected_weeks), value=f"{camp_colearn_all} 人次")
-        cell_tail.font = font_total
-        cell_tail.fill = fill_total
-        cell_tail.alignment = align_center
-        cell_tail.border = thin_border
-
-        # Sheet 4: 全營組員明細矩陣
-        ws4 = wb.create_sheet(title="全營組員明細矩陣")
-        ws4.cell(row=1, column=1, value="🌸 園區情緒觀察營 — 全營組員跨週填報與共學狀態明細對照總表").font = font_title
-        ws4.cell(row=2, column=1, value=f"統計區間：{', '.join(wk_labels)}  |  說明：『v N』有共學且填寫N張；『X N』未共學但填寫N張；空白未填報").font = font_subtitle
-
-        headers4 = ["組別", "保溫組長", "編號", "組員姓名"] + wk_labels + ["區間累計張數", "區間共學次數"]
-        for col_idx, h in enumerate(headers4, 1):
-            cell = ws4.cell(row=4, column=col_idx, value=h)
-            cell.font = font_header
-            cell.fill = fill_header
-            cell.alignment = align_center
-            cell.border = thin_border
-
-        curr_row = 5
-        for g_name, g_info in groups_data.items():
-            ldr = g_info.get("leader", "")
-            m_list = g_info.get("members", [])
-
-            for row_i, m_full in enumerate(m_list):
-                if " " in m_full:
-                    m_parts = m_full.split(" ")
-                    m_id = m_parts[0]
-                    m_name = m_parts[1]
-                else:
-                    m_id = f"{row_i+1}"
-                    m_name = m_full
-
-                c1 = ws4.cell(row=curr_row, column=1, value=g_name)
-                c2 = ws4.cell(row=curr_row, column=2, value=ldr)
-                c3 = ws4.cell(row=curr_row, column=3, value=m_id)
-                c4 = ws4.cell(row=curr_row, column=4, value=m_name)
-                for c in (c1, c2, c3, c4):
-                    c.font = font_body
-                    c.alignment = align_center
-                    c.border = thin_border
-
-                tot_s = 0
-                tot_c = 0
-                for idx, wk in enumerate(selected_weeks):
-                    if not all_data.empty and "當週回報期間" in all_data.columns:
-                        u_rec = all_data[(all_data["組別"] == g_name) & 
-                                         (all_data["當週回報期間"] == wk) & 
-                                         (all_data["個人姓名"] == m_name)]
-                    else:
-                        u_rec = pd.DataFrame()
-
-                    if not u_rec.empty:
-                        sheets = int(u_rec["當週填表張數"].values[0]) if "當週填表張數" in u_rec.columns and pd.notna(u_rec["當週填表張數"].values[0]) else 1
-                        co_learn = (u_rec["本週組內共學"].values[0] == "是") if "本週組內共學" in u_rec.columns else False
-                        tot_s += sheets
-                        if co_learn:
-                            tot_c += 1
-                            cell_val = f"v {sheets}"
-                        else:
-                            cell_val = f"X {sheets}"
-                    else:
-                        cell_val = ""
-
-                    cell = ws4.cell(row=curr_row, column=5 + idx, value=cell_val)
-                    cell.font = font_body
-                    cell.alignment = align_center
-                    cell.border = thin_border
-
-                c_s = ws4.cell(row=curr_row, column=5 + len(selected_weeks), value=f"{tot_s} 張")
-                c_c = ws4.cell(row=curr_row, column=6 + len(selected_weeks), value=f"{tot_c} 次")
-                for c in (c_s, c_c):
-                    c.font = font_bold
-                    c.alignment = align_center
-                    c.border = thin_border
-
-                curr_row += 1
-
-        for sheet in wb.worksheets:
-            for col in sheet.columns:
-                max_len = 0
-                col_letter = get_column_letter(col[0].column)
-                for cell in col:
-                    if cell.value:
-                        val_str = str(cell.value)
-                        max_len = max(max_len, len(val_str.encode('utf-8')) // 2 + 2)
-                sheet.column_dimensions[col_letter].width = max(max_len, 12)
-
-        import io
-        output = io.BytesIO()
-        wb.save(output)
-        return output.getvalue()
-    except Exception:
-        return None
-
-
 def generate_cross_week_matrix_pdf(selected_weeks, all_data, groups_data):
     if not HAS_FPDF:
         return None
@@ -1108,13 +753,15 @@ groups_data = {
     "第 1 組": {
         "leader": "曾旭正、李麗斐（副）",
         "members": [
-            "1-1 曾旭正", "1-2 李麗斐", "1-3 蔡淵輝", "1-4 薛榕婷", "1-5 關婉玲", "1-6 周文祥", "1-7 馮豐隆", "1-8 郭擺灧", "1-9 鍾昆原", "1-10 張筱雯", "1-11 王坤德", "1-12 吳美毅", "1-13 曾美芳", "1-14 陳淑芬", "1-15 蔡沛妤", "1-16 黃淑清", "1-17 陳萬和", "1-18 梁庭", "1-19 嚴惠英", "1-20 李宛融"
+            "1-1 曾旭正", "1-2 李麗斐", "1-3 蔡淵輝", "1-4 薛榕婷", "1-5 關婉玲", "1-6 周文祥", "1-7 馮豐隆", "1-8 郭擺灧", "1-9 鍾昆原", "1-10 張筱雯", "1-11 王坤德", "1-12 吳美毅", "1-13 曾美芳", "1-14 陳淑芬", "1-15 蔡沛妤", "1-16 黃淑清", "1-17 陳萬和", "1-18 梁庭", "1-19 嚴惠英", "1-20 李宛融",
+            "1-21 張兆康", "1-22 楊雅玲", "1-23 邱麗家", "1-24 黃馨慧"
         ]
     },
     "第 2 組": {
         "leader": "楊韻蓉",
         "members": [
-            "2-1 林文華", "2-2 林佳慧", "2-3 楊韻蓉", "2-4 林翔均", "2-5 溫婷伊", "2-6 陳田恬", "2-7 廖袖婷", "2-8 王均晨", "2-9 蔡宜均", "2-10 吳煥崇", "2-11 黃曉鈺", "2-12 葉桂香", "2-13 陳秀花", "2-14 劉德政", "2-15 吳振仁"
+            "2-1 林文華", "2-2 林佳慧", "2-3 楊韻蓉", "2-4 林翔均", "2-5 溫婷伊", "2-6 陳田恬", "2-7 廖袖婷", "2-8 王均晨", "2-9 蔡宜均", "2-10 吳煥崇", "2-11 黃曉鈺", "2-12 葉桂香", "2-13 陳秀花", "2-14 劉德政", "2-15 吳振仁",
+            "2-16 黃淑貞", "2-17 許崑燈", "2-18 許錦志", "2-19 陳三郎", "2-20 陳侯君"
         ]
     },
     "第 3 組": {
@@ -1126,13 +773,15 @@ groups_data = {
     "第 4 組": {
         "leader": "王國美",
         "members": [
-            "4-1 王國美", "4-2 黃柏豪", "4-3 謝佳容", "4-4 劉以婕", "4-5 留千惠", "4-6 張玉芳", "4-7 吳念真", "4-8 陳芸詞", "4-9 陳揚旻", "4-10 鄭翊汝", "4-11 李濱如", "4-12 洪筱婷", "4-13 張麗卿", "4-14 陳聖昀", "4-15 曾麗珍", "4-16 賀正楨", "4-17 潘秋華", "4-18 鄭美華", "4-19 羅怡和", "4-20 周秀芬", "4-21 侯得正"
+            "4-1 王國美", "4-2 黃柏豪", "4-3 謝佳容", "4-4 劉以婕", "4-5 留千惠", "4-6 張玉芳", "4-7 吳念真", "4-8 陳芸詞", "4-9 陳揚旻", "4-10 鄭翊汝", "4-11 李濱如", "4-12 洪筱婷", "4-13 張麗卿", "4-14 陳聖昀", "4-15 曾麗珍", "4-16 賀正楨", "4-17 潘秋華", "4-18 鄭美華", "4-19 羅怡和", "4-20 周秀芬", "4-21 侯得正",
+            "4-22 林孟蓉", "4-23 張毓娣"
         ]
     },
     "第 5 組": {
         "leader": "郭宗川",
         "members": [
-            "5-1 郭宗川", "5-2 劉馨檀", "5-3 黃瓊慧", "5-4 石俊傑", "5-5 張志豪", "5-6 林淑寧", "5-7 林麗雪", "5-8 陳毓旻", "5-9 楊舒涵", "5-10 李平裕", "5-11 李俊男", "5-12 尤躍勳", "5-13 戴世昌", "5-14 黃壬癸", "5-15 蔡宗佑", "5-16 邱淑春", "5-17 郭富貴", "5-18 李麗卿", "5-19 蕭玉卿", "5-20 陳秀美", "5-21 劉玉如", "5-22 賴幸絹"
+            "5-1 郭宗川", "5-2 劉馨檀", "5-3 黃瓊慧", "5-4 石俊傑", "5-5 張志豪", "5-6 林淑寧", "5-7 林麗雪", "5-8 陳毓旻", "5-9 楊舒涵", "5-10 李平裕", "5-11 李俊男", "5-12 尤躍勳", "5-13 戴世昌", "5-14 黃壬癸", "5-15 蔡宗佑", "5-16 邱淑春", "5-17 郭富貴", "5-18 李麗卿", "5-19 蕭玉卿", "5-20 陳秀美", "5-21 劉玉如", "5-22 賴幸絹",
+            "5-23 張瑋鑫"
         ]
     },
     "第 6 組": {
@@ -1144,19 +793,22 @@ groups_data = {
     "第 7 組": {
         "leader": "陳定群",
         "members": [
-            "7-1 陳定群", "7-2 吳庭妤", "7-3 吳幸蓉", "7-4 林伶雯", "7-5 林美芳", "7-6 林靖芳", "7-7 徐續仁", "7-8 張靜娟", "7-9 蕭淑勻", "7-10 吳璧合", "7-11 陳淑芳", "7-12 黃金輝", "7-13 鄭秀娟", "7-14 鄭宜涵", "7-15 鄭斐文", "7-16 謝萬蒲", "7-17 魏媛真", "7-18 楊美蘭"
+            "7-1 陳定群", "7-2 吳庭妤", "7-3 吳幸蓉", "7-4 林伶雯", "7-5 林美芳", "7-6 林靖芳", "7-7 徐續仁", "7-8 張靜娟", "7-9 蕭淑勻", "7-10 吳璧合", "7-11 陳淑芳", "7-12 黃金輝", "7-13 鄭秀娟", "7-14 鄭宜涵", "7-15 鄭斐文", "7-16 謝萬蒲", "7-17 魏媛真", "7-18 楊美蘭",
+            "7-19 何佳珍", "7-20 陳雅雯", "7-21 童于釗", "7-22 劉乃禎", "7-23 林義勝"
         ]
     },
     "第 8 組": {
         "leader": "楊婉君",
         "members": [
-            "8-1 楊婉君", "8-2 林宗平", "8-3 吳欣緯", "8-4 陳秋芬", "8-5 王怡誠", "8-6 王麗景", "8-7 章玲珠", "8-8 李瓊華", "8-9 劉燕冰", "8-10 盧菀萱", "8-11 李淑瑛", "8-12 楊素粉", "8-13 劉筱愛", "8-14 盧彥妤", "8-15 明子又", "8-16 黃翠月", "8-17 賴香雪", "8-18 蘇郁合", "8-19 蘇國樑"
+            "8-1 楊婉君", "8-2 林宗平", "8-3 吳欣緯", "8-4 陳秋芬", "8-5 王怡誠", "8-6 王麗景", "8-7 章玲珠", "8-8 李瓊華", "8-9 劉燕冰", "8-10 盧菀萱", "8-11 李淑瑛", "8-12 楊素粉", "8-13 劉筱愛", "8-14 盧彥妤", "8-15 明子又", "8-16 黃翠月", "8-17 賴香雪", "8-18 蘇郁合", "8-19 蘇國樑",
+            "8-20 廖孟鴻"
         ]
     },
     "第 9 組": {
         "leader": "林如玉",
         "members": [
-            "9-1 林如玉", "9-2 林淑娟", "9-3 余雅玲", "9-4 李慧瑛", "9-5 辛天送", "9-6 白秀清", "9-7 莊淑娟", "9-8 游建邦", "9-9 黃惠卿", "9-10 蔡純慧", "9-11 洪雅玲", "9-12 徐惠美", "9-13 周珈漩", "9-14 許湘惠", "9-15 周林美麗", "9-16 何苑色", "9-17 李俊宏", "9-18 喻榮華", "9-19 柳書玉", "9-20 蘇鴻濱"
+            "9-1 林如玉", "9-2 林淑娟", "9-3 余雅玲", "9-4 李慧瑛", "9-5 辛天送", "9-6 白秀清", "9-7 莊淑娟", "9-8 游建邦", "9-9 黃惠卿", "9-10 蔡純慧", "9-11 洪雅玲", "9-12 徐惠美", "9-13 周珈漩", "9-14 許湘惠", "9-15 周林美麗", "9-16 何苑色", "9-17 李俊宏", "9-18 喻榮華", "9-19 柳書玉", "9-20 蘇鴻濱",
+            "9-21 吳秋燕", "9-22 林淑萍", "9-23 陳惠珠", "9-24 葉靜宜"
         ]
     },
     "第 10 組": {
@@ -1168,7 +820,7 @@ groups_data = {
     "第 11 組": {
         "leader": "林美華",
         "members": [
-            "11-1 賴素貞", "11-2 賴彥帛", "11-3 洪于晴", "11-4 何如甘", "11-5 李素茹", "11-6 林珍安", "11-7 吳核豫", "11-8 葉如玲", "11-9 林保秀", "11-10 陳品樺", "11-11 蘇相瑜", "11-12 江盈潔", "11-13 阮芬", "11-14 雙東華", "11-15 林美華", "11-16 蔡菁雯", "11-17 楊金珠", "11-18 蕭淑慧", "11-19 韋淑媛", "11-20 徐丞億"
+            "11-1 賴素貞", "11-2 賴彥帛", "11-3 洪于晴", "11-4 何如甘", "11-5 李素茹", "11-6 林珍安", "11-7 吳核豫", "11-8 葉如玲", "11-9 林保秀", "11-10 陳品樺", "11-11 蘇相瑜", "11-12 江盈潔", "11-13 阮芬", "11-14 許東華", "11-15 林美華", "11-16 蔡菁雯", "11-17 楊金珠", "11-18 蕭淑慧", "11-19 韋淑媛", "11-20 徐丞億"
         ]
     },
     "第 12 組": {
@@ -1180,37 +832,43 @@ groups_data = {
     "第 13 組": {
         "leader": "高韻筑",
         "members": [
-            "13-1 陳重仰", "13-2 高韻筑", "13-3 王上苹", "13-4 陳珈暐", "13-5 林珮圻", "13-6 施瀞雅", "13-7 丁秌全", "13-8 黃蔚菁", "13-9 吳孟霖", "13-10 張慈方", "13-11 鄭鈞懿", "13-12 王慧玟", "13-13 彭美珠", "13-14 黃忠權", "13-15 陳彥伶", "13-16 卓卉綺", "13-17 林于煒", "13-18 張婉玲", "13-19 朱庭葦"
+            "13-1 陳重仰", "13-2 高韻筑", "13-3 王上苹", "13-4 陳珈暐", "13-5 林珮圻", "13-6 施瀞雅", "13-7 丁秌全", "13-8 黃蔚菁", "13-9 吳孟霖", "13-10 張慈方", "13-11 鄭鈞懿", "13-12 王慧玟", "13-13 彭美珠", "13-14 黃忠權", "13-15 陳彥伶", "13-16 卓卉綺", "13-17 林于煒", "13-18 張婉玲", "13-19 朱庭葦",
+            "13-20 梁涵靈"
         ]
     },
     "第 14 組": {
         "leader": "蔡秉諺",
         "members": [
-            "14-1 蔡秉諺", "14-2 高翊綺", "14-3 秦育曐", "14-4 莊媛婷", "14-5 蔡明真", "14-6 陳桂宸", "14-7 黃麗燕", "14-8 吳承璇", "14-9 葉美鴻", "14-10 張在增", "14-11 顏少萱", "14-12 王馨儀", "14-13 林奕瑄", "14-14 郭芷萱", "14-15 吳靜宜", "14-16 張容", "14-17 蕭米佋", "14-18 李岳璋", "14-19 廖育君", "14-20 謝孟君", "14-21 葉姿佑"
+            "14-1 蔡秉諺", "14-2 高翊綺", "14-3 秦育曐", "14-4 莊媛婷", "14-5 蔡明真", "14-6 陳桂宸", "14-7 黃麗燕", "14-8 吳承璇", "14-9 葉美鴻", "14-10 張在增", "14-11 顏少萱", "14-12 王馨儀", "14-13 林奕瑄", "14-14 郭芷萱", "14-15 吳靜宜", "14-16 張容", "14-17 蕭米佋", "14-18 李岳璋", "14-19 廖育君", "14-20 謝孟君", "14-21 葉姿佑",
+            "14-22 李依霖", "14-23 葉明穎"
         ]
     },
     "第 15 組": {
         "leader": "高忠偉",
         "members": [
-            "15-1 廖以萱", "15-2 高忠偉", "15-3 侯惠芸", "15-4 侯惠倫", "15-5 莊郁琳", "15-6 戴毓書", "15-7 張家瑄", "15-8 邵杰", "15-9 白豐銘", "15-10 黃沛瑋", "15-11 張雁菁", "15-12 蔡佩君", "15-13 鄭伃倢", "15-14 曾品綸", "15-15 張文馨", "15-16 劉思嫺", "15-17 黃姿蓉", "15-18 賴姳璇", "15-19 洪瑩蓁", "15-20 陳星妤"
+            "15-1 廖以萱", "15-2 高忠偉", "15-3 侯惠芸", "15-4 侯惠倫", "15-5 莊郁琳", "15-6 戴毓書", "15-7 張家瑄", "15-8 邵杰", "15-9 白豐銘", "15-10 黃沛瑋", "15-11 張雁菁", "15-12 蔡佩君", "15-13 鄭伃倢", "15-14 曾品綸", "15-15 張文馨", "15-16 劉思嫺", "15-17 黃姿蓉", "15-18 賴姳璇", "15-19 洪瑩蓁", "15-20 陳星妤",
+            "15-21 洪涵楨", "15-22 陳祈翰"
         ]
     },
     "第 16 組": {
         "leader": "偕魁元",
         "members": [
-            "16-1 偕魁元", "16-2 李庭安", "16-3 劉妙娟", "16-4 沈承宗", "16-5 蔡雅雅", "16-6 凃文鳳", "16-7 莊雅惠", "16-8 劉巧領", "16-9 鄭雅文", "16-10 湯玉琦", "16-11 劉姿吟", "16-12 蕭茲方", "16-13 王芳珠", "16-14 陳冠同", "16-15 林秀菁", "16-16 黃政和", "16-17 徐友信", "16-18 吳莉惠", "16-19 林宜筠"
+            "16-1 偕魁元", "16-2 李庭安", "16-3 劉妙娟", "16-4 沈承宗", "16-5 蔡雅雅", "16-6 凃文鳳", "16-7 莊雅惠", "16-8 劉巧領", "16-9 鄭雅文", "16-10 湯玉琦", "16-11 劉姿吟", "16-12 蕭茲方", "16-13 王芳珠", "16-14 陳冠同", "16-15 林秀菁", "16-16 黃政和", "16-17 徐友信", "16-18 吳莉惠", "16-19 林宜筠",
+            "16-20 陳威志", "16-21 彭翠琴"
         ]
     },
     "第 17 組": {
         "leader": "蘇誌盈",
         "members": [
-            "17-1 蘇誌盈", "17-2 王素敏", "17-3 蔡石福地", "17-4 李世林", "17-5 黃淑芳", "17-6 胡瑜玲", "17-7 柯孟宜", "17-8 林靜香", "17-9 葉瓊雅", "17-10 張秋美", "17-11 劉宇容", "17-12 黃克經", "17-13 林淑樺", "17-14 黃榮茂", "17-15 邵士誠", "17-16 鄭人豪", "17-17 姚翠華"
+            "17-1 蘇誌盈", "17-2 王素敏", "17-3 蔡石福地", "17-4 李世林", "17-5 黃淑芳", "17-6 胡瑜玲", "17-7 柯孟宜", "17-8 林靜香", "17-9 葉瓊雅", "17-10 張秋美", "17-11 劉宇容", "17-12 黃克經", "17-13 林淑樺", "17-14 黃榮茂", "17-15 邵士誠", "17-16 鄭人豪", "17-17 姚翠華",
+            "17-18 鄭宇丞", "17-19 王玉泰", "17-20 林嘉麗", "17-21 包正萍", "17-22 吳建銘"
         ]
     },
     "第 18 組": {
         "leader": "陳麗華",
         "members": [
-            "18-1 陳麗華", "18-2 廖述強", "18-3 黃淑梅", "18-4 林玲芬", "18-5 曹曼容", "18-6 柯錦鑫", "18-7 張湘瑜", "18-8 吳美蓉", "18-9 陳月美", "18-10 陳素葉", "18-11 郭宇家", "18-12 黃佩琪", "18-13 朱龍昌", "18-14 謝桂红", "18-15 阮善如", "18-16 陳丁清", "18-17 楊月娥", "18-18 謝秀錦", "18-19 陳慶旺", "18-20 陳錦鳳"
+            "18-1 陳麗華", "18-2 廖述強", "18-3 黃淑梅", "18-4 林玲芬", "18-5 曹曼容", "18-6 柯錦鑫", "18-7 張湘瑜", "18-8 吳美蓉", "18-9 陳月美", "18-10 陳素葉", "18-11 郭宇家", "18-12 黃佩琪", "18-13 朱龍昌", "18-14 謝桂红", "18-15 阮善如", "18-16 陳丁清", "18-17 楊月娥", "18-18 謝秀錦", "18-19 陳慶旺", "18-20 陳錦鳳",
+            "18-21 林美英", "18-22 蔡瓊瑤", "18-23 廖秀娥", "18-24 鄒馥如", "18-25 沈愛齡"
         ]
     },
     "第 19 組": {
@@ -1515,7 +1173,7 @@ def save_record(new_row, gas_url=""):
             return True, f"本機已儲存 (雲端連線異常)"
     return True, "成功"
 
-# Define passwords for group leaders (leader01 ~ leader18) and admin (admin2026)
+# Define passwords for group leaders (leader01 ~ leader19) and admin (admin2026)
 leader_passwords = {f"第 {i} 組": f"leader{i:02d}" for i in range(1, 20)}
 admin_password = "admin2026"
 
@@ -3430,136 +3088,51 @@ elif role == "📊 總窗口後台管理":
                     groups_data=groups_data
                 )
                 
-                docx_matrix_bytes = generate_cross_week_matrix_docx(
-                    selected_weeks=selected_matrix_weeks,
-                    all_data=df,
-                    groups_data=groups_data
-                )
-                
-                xlsx_matrix_bytes = generate_cross_week_matrix_xlsx(
-                    selected_weeks=selected_matrix_weeks,
-                    all_data=df,
-                    groups_data=groups_data
-                )
-                
-                btn_m1, btn_m2, btn_m3 = st.columns(3)
+                btn_m1, btn_m2 = st.columns([1, 1])
                 with btn_m1:
                     if pdf_matrix_bytes:
                         st.download_button(
-                            label=f"📄 導出全營跨週矩陣報告 (.pdf)",
-                            data=pdf_matrix_bytes,
-                            file_name=f"園區情緒觀察營_全營跨週對照矩陣報告_{start_wk_lbl}_至_{end_wk_lbl}.pdf",
-                            mime="application/pdf",
-                            key="download_cross_week_matrix_pdf_btn"
-                        )
-                    st.caption("💡 高質感 A4 橫向 PDF 總表。")
-
-                with btn_m2:
-                    if docx_matrix_bytes:
-                        st.download_button(
-                            label=f"📝 導出全營跨週矩陣報告 (.docx)",
-                            data=docx_matrix_bytes,
-                            file_name=f"園區情緒觀察營_全營跨週對照矩陣報告_{start_wk_lbl}_至_{end_wk_lbl}.docx",
-                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                            key="download_cross_week_matrix_docx_btn"
-                        )
-                    st.caption("💡 可編輯之 Word 橫向報表。")
-
-                with btn_m3:
-                    if xlsx_matrix_bytes:
-                        st.download_button(
-                            label=f"📊 導出全營跨週矩陣總表 (.xlsx)",
-                            data=xlsx_matrix_bytes,
-                            file_name=f"園區情緒觀察營_全營跨週對照矩陣總表_{start_wk_lbl}_至_{end_wk_lbl}.xlsx",
-                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                            key="download_cross_week_matrix_xlsx_btn"
+                        label=f"📄 導出全營跨週對照矩陣報告 (.pdf) 【{start_wk_lbl} ~ {end_wk_lbl}】",
+                        data=pdf_matrix_bytes,
+                        file_name=f"園區情緒觀察營_全營跨週對照矩陣報告_{start_wk_lbl}_至_{end_wk_lbl}.pdf",
+                        mime="application/pdf",
+                        key="download_cross_week_matrix_pdf_btn"
                         )
                     else:
-                        st.info("💡 如需導出 Excel 試算表 (.xlsx)，請在伺服器/GitHub 安裝 openpyxl 套件。")
-                    st.caption("💡 內含 4 個獨立試算表分頁。")
-
-                st.write("")
-                st.info(f"📊 目前選定比對區間：**{start_wk_lbl} ~ {end_wk_lbl}**（涵蓋 {len(selected_matrix_weeks)} 個週次）")
-
-                with st.expander(f"🔍 點此預覽全營各組與組員跨週對照矩陣 ({start_wk_lbl} ~ {end_wk_lbl})"):
-                    preview_tab1, preview_tab2 = st.tabs(["📊 全營三大對照矩陣預覽", "👥 各組組長頁面（組員明細矩陣預覽）"])
+                        st.warning("請導出 Word 報表 (.docx)")
+                    st.caption("💡 導出之 PDF 包含全營 18 組於選定區間之『填報人數/填報率』、『當週總填表張數』與『組內共學人數』三大跨週對照表。")
                     
-                    with preview_tab1:
-                        st.markdown("#### 📊 全營『填寫人數與填報率』跨週對照矩陣")
-                        preview_rows = []
-                        for g_name, g_info in groups_data.items():
-                            row_dict = {"組別": g_name, "保溫組長": g_info["leader"]}
-                            m_list = g_info["members"]
-                            m_names = [m.split(" ")[1] if " " in m else m for m in m_list]
-                            tot_m = len(m_list)
-                            
-                            sub_sum = 0
-                            for wk_f in selected_matrix_weeks:
-                                wk_short = wk_f.split(" (")[0]
-                                if not df.empty and "當週回報期間" in df.columns:
-                                    df_w = df[df["當週回報期間"] == wk_f]
-                                    df_gw = df_w[df_w["組別"] == g_name] if not df_w.empty else pd.DataFrame()
-                                else:
-                                    df_gw = pd.DataFrame()
-                                sub_names = df_gw["個人姓名"].tolist() if not df_gw.empty and "個人姓名" in df_gw.columns else []
-                                s_cnt = len(set(sub_names) & set(m_names))
-                                sub_sum += s_cnt
-                                rate = (s_cnt / tot_m * 100) if tot_m > 0 else 0.0
-                                row_dict[wk_short] = f"{s_cnt}/{tot_m} ({rate:.0f}%)"
-                            
-                            avg_rate = (sub_sum / (tot_m * len(selected_matrix_weeks)) * 100) if tot_m * len(selected_matrix_weeks) > 0 else 0.0
-                            row_dict["區間平均率"] = f"{avg_rate:.1f}%"
-                            preview_rows.append(row_dict)
-                            
-                        preview_df = pd.DataFrame(preview_rows).set_index("組別")
-                        st.table(preview_df)
+                with btn_m2:
+                    st.info(f"📊 目前選定比對區間：**{start_wk_lbl} ~ {end_wk_lbl}**（涵蓋 {len(selected_matrix_weeks)} 個週次）")
+
+                with st.expander(f"🔍 點此預覽全營 18 組跨週填報率對照矩陣 ({start_wk_lbl} ~ {end_wk_lbl})"):
+                    preview_rows = []
+                    for g_name, g_info in groups_data.items():
+                        row_dict = {"組別": g_name, "保溫組長": g_info["leader"]}
+                        m_list = g_info["members"]
+                        m_names = [m.split(" ")[1] if " " in m else m for m in m_list]
+                        tot_m = len(m_list)
                         
-                    with preview_tab2:
-                        st.markdown("#### 👥 各組組長視角：組員個人跨週填報與共學狀態對照預覽")
-                        sel_preview_group = st.selectbox("請選擇預覽組別：", options=list(groups_data.keys()), key="preview_group_select")
-                        if sel_preview_group:
-                            g_info = groups_data[sel_preview_group]
-                            st.caption(f"📍 保溫組長：**{g_info.get('leader', '')}**  |  註：『v N』有共學且填表；『X N』未共學但填表；空白未填報")
-                            
-                            m_list = g_info.get("members", [])
-                            m_detail_rows = []
-                            for row_i, m_full in enumerate(m_list):
-                                if " " in m_full:
-                                    parts = m_full.split(" ")
-                                    m_id = parts[0]
-                                    m_name = parts[1]
-                                else:
-                                    m_id = f"{row_i+1}"
-                                    m_name = m_full
-                                    
-                                r_m = {"編號": m_id, "組員姓名": m_name}
-                                tot_s = 0
-                                tot_c = 0
-                                for wk_f in selected_matrix_weeks:
-                                    wk_short = wk_f.split(" (")[0]
-                                    if not df.empty and "當週回報期間" in df.columns:
-                                        u_rec = df[(df["組別"] == sel_preview_group) & (df["當週回報期間"] == wk_f) & (df["個人姓名"] == m_name)]
-                                    else:
-                                        u_rec = pd.DataFrame()
-                                        
-                                    if not u_rec.empty:
-                                        sheets = int(u_rec["當週填表張數"].values[0]) if "當週填表張數" in u_rec.columns and pd.notna(u_rec["當週填表張數"].values[0]) else 1
-                                        co_learn = (u_rec["本週組內共學"].values[0] == "是") if "本週組內共學" in u_rec.columns else False
-                                        tot_s += sheets
-                                        if co_learn:
-                                            tot_c += 1
-                                            r_m[wk_short] = f"v {sheets}"
-                                        else:
-                                            r_m[wk_short] = f"X {sheets}"
-                                    else:
-                                        r_m[wk_short] = ""
-                                        
-                                r_m["區間累計張數"] = f"{tot_s} 張"
-                                r_m["區間共學次數"] = f"{tot_c} 次"
-                                m_detail_rows.append(r_m)
-                                
-                            m_df = pd.DataFrame(m_detail_rows).set_index("編號")
-                            st.table(m_df)
+                        sub_sum = 0
+                        for wk_f in selected_matrix_weeks:
+                            wk_short = wk_f.split(" (")[0]
+                            if not df.empty and "當週回報期間" in df.columns:
+                                df_w = df[df["當週回報期間"] == wk_f]
+                                df_gw = df_w[df_w["組別"] == g_name] if not df_w.empty else pd.DataFrame()
+                            else:
+                                df_gw = pd.DataFrame()
+                            sub_names = df_gw["個人姓名"].tolist() if not df_gw.empty and "個人姓名" in df_gw.columns else []
+                            s_cnt = len(set(sub_names) & set(m_names))
+                            sub_sum += s_cnt
+                            rate = (s_cnt / tot_m * 100) if tot_m > 0 else 0.0
+                            row_dict[wk_short] = f"{s_cnt}/{tot_m} ({rate:.0f}%)"
+                        
+                        avg_rate = (sub_sum / (tot_m * len(selected_matrix_weeks)) * 100) if tot_m * len(selected_matrix_weeks) > 0 else 0.0
+                        row_dict["區間平均率"] = f"{avg_rate:.1f}%"
+                        preview_rows.append(row_dict)
+                        
+                    preview_df = pd.DataFrame(preview_rows).set_index("組別")
+                    st.table(preview_df)
             else:
                 st.warning("⚠️ 請至少選擇一個週次以生成對照矩陣 PDF 報告。")
 
