@@ -2,5 +2,6 @@ streamlit
 pandas
 requests
 python-docx
-pytz
 fpdf2
+openpyxl
+pytz
