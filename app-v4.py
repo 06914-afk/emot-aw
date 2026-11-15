@@ -2524,6 +2524,30 @@ elif not is_authenticated:
         
     if group_selected and name_selected:
         st.markdown(f'<div class="group-box">ℹ️ 您選取的是 <b>{group_selected}</b>，請確認已選擇編號為：<b>{auto_member_id} ({actual_name})</b></div>', unsafe_allow_html=True)
+    # 💡 學員個人 W1~W10 心得總結報告 PDF 導出按鈕
+        try:
+            df_student = load_data()
+            student_pdf_bytes = generate_student_w1_w10_pdf(
+                group_name=group_selected,
+                member_id=auto_member_id,
+                member_name=actual_name,
+                all_data=df_student,
+                weeks_list=weeks_list
+            )
+            if student_pdf_bytes:
+                st.download_button(
+                    label=f"📄 導出個人 W1~W10 心得總結報告 (.pdf) — {actual_name}",
+                    data=student_pdf_bytes,
+                    file_name=f"個人W1_W10心得總結報告_{group_selected}_{actual_name}.pdf",
+                    mime="application/pdf",
+                    key=f"download_student_w1_w10_pdf_{group_selected}_{auto_member_id}"
+                )
+                st.caption("💡 點擊上方按鈕即可導出包含『組別、姓名、W1~W10 每週填表張數、累積張數與每週心得全文』之 PDF 報告。")
+        except Exception as e:
+            pass
+
+    
+    
     else:
         st.markdown('<div class="group-box">ℹ️ 請先選擇您的 <b>組別</b> 與 <b>姓名</b> 以進行填報</div>', unsafe_allow_html=True)
     
