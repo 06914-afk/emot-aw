@@ -179,13 +179,12 @@ def generate_student_w1_w10_pdf(group_name, member_id, member_name, all_data, we
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
         
-        # Title
+        # 抬頭與基本資訊
         pdf.set_font('NotoSansTC', '', 15)
         pdf.set_text_color(27, 94, 32)
         pdf.cell(0, 10, '園區情緒觀察營 - 個人 W1~W10 心得總結報告', new_x='LMARGIN', new_y='NEXT', align='C')
         pdf.ln(2)
         
-        # Meta Info Box
         now_str = datetime.datetime.now(pytz.timezone('Asia/Taipei')).strftime('%Y/%m/%d %H:%M')
         pdf.set_font('NotoSansTC', '', 9.5)
         pdf.set_text_color(50, 50, 50)
@@ -197,23 +196,22 @@ def generate_student_w1_w10_pdf(group_name, member_id, member_name, all_data, we
         
         target_weeks = weeks_list[:10]
         
-        # 1. Summary Table (W1~W10 Overview)
+        # 1. 回報張數與共學統計總覽 (含表格與圖表)
         pdf.set_font('NotoSansTC', '', 11)
         pdf.set_text_color(27, 94, 32)
         pdf.cell(0, 7, '【一、W1 ~ W10 回報張數與共學統計總覽】', new_x='LMARGIN', new_y='NEXT')
         pdf.ln(1)
         
-        # Table Header
+        pdf.set_font('NotoSansTC', '', 9.5)
+        pdf.set_text_color(27, 94, 32)
+        pdf.cell(0, 6, '（一）回報數據與共學統計總覽表', new_x='LMARGIN', new_y='NEXT')
+        pdf.ln(1)
+
         pdf.set_fill_color(27, 94, 32)
         pdf.set_text_color(255, 255, 255)
         pdf.set_font('NotoSansTC', '', 9)
         
-        col_w_week = 35
-        col_w_sheets = 35
-        col_w_cum = 35
-        col_w_colearn = 35
-        col_w_status = 40
-        
+        col_w_week, col_w_sheets, col_w_cum, col_w_colearn, col_w_status = 35, 35, 35, 35, 40
         pdf.cell(col_w_week, 7, '回報週別', border=1, align='C', fill=True)
         pdf.cell(col_w_sheets, 7, '當週填表張數', border=1, align='C', fill=True)
         pdf.cell(col_w_cum, 7, '累積填表張數', border=1, align='C', fill=True)
@@ -231,14 +229,7 @@ def generate_student_w1_w10_pdf(group_name, member_id, member_name, all_data, we
         
         for idx, wk_full in enumerate(target_weeks):
             wk_code = wk_full.split(' (')[0].strip()
-            
-            if not all_data.empty and '當週回報期間' in all_data.columns:
-                u_rec = all_data[(all_data['組別'] == group_name) & 
-                                 (all_data['個人姓名'] == member_name) & 
-                                 (all_data['當週回報期間'] == wk_full)]
-            else:
-                u_rec = pd.DataFrame()
-                
+            u_rec = all_data[(all_data['組別'] == group_name) & (all_data['個人姓名'] == member_name) & (all_data['當週回報期間'] == wk_full)] if (not all_data.empty and '當週回報期間' in all_data.columns) else pd.DataFrame()
             fill = (idx % 2 == 1)
             pdf.set_fill_color(245, 247, 245) if fill else pdf.set_fill_color(255, 255, 255)
             
@@ -255,13 +246,8 @@ def generate_student_w1_w10_pdf(group_name, member_id, member_name, all_data, we
                 if fb_text in ['nan', 'None', '無', '尚無']:
                     fb_text = ''
                 week_records.append({
-                    'week_code': wk_code,
-                    'week_full': wk_full,
-                    'submitted': True,
-                    'sheets': sheets,
-                    'cum_sheets': cum_sheets,
-                    'colearn': co_learn_str,
-                    'feedback': fb_text,
+                    'week_code': wk_code, 'week_full': wk_full, 'submitted': True,
+                    'sheets': sheets, 'cum_sheets': cum_sheets, 'colearn': co_learn_str, 'feedback': fb_text
                 })
                 pdf.cell(col_w_week, 6.5, wk_code, border=1, align='C', fill=True)
                 pdf.cell(col_w_sheets, 6.5, f'{sheets} 張', border=1, align='C', fill=True)
@@ -271,13 +257,8 @@ def generate_student_w1_w10_pdf(group_name, member_id, member_name, all_data, we
                 pdf.ln()
             else:
                 week_records.append({
-                    'week_code': wk_code,
-                    'week_full': wk_full,
-                    'submitted': False,
-                    'sheets': 0,
-                    'cum_sheets': tot_sheets,
-                    'colearn': '否',
-                    'feedback': '',
+                    'week_code': wk_code, 'week_full': wk_full, 'submitted': False,
+                    'sheets': 0, 'cum_sheets': tot_sheets, 'colearn': '否', 'feedback': ''
                 })
                 pdf.cell(col_w_week, 6.5, wk_code, border=1, align='C', fill=True)
                 pdf.cell(col_w_sheets, 6.5, '0 張', border=1, align='C', fill=True)
@@ -286,7 +267,6 @@ def generate_student_w1_w10_pdf(group_name, member_id, member_name, all_data, we
                 pdf.cell(col_w_status, 6.5, '未填報', border=1, align='C', fill=True)
                 pdf.ln()
                 
-        # Total Summary Row
         pdf.set_fill_color(225, 238, 226)
         pdf.set_font('NotoSansTC', '', 9)
         pdf.set_text_color(27, 94, 32)
@@ -298,8 +278,13 @@ def generate_student_w1_w10_pdf(group_name, member_id, member_name, all_data, we
         pdf.ln()
         pdf.ln(3)
 
-        # 💡 生成視覺化對照趨勢圖 (Matplotlib Chart Embedding)
+        # (二) 視覺化對照趨勢圖表 (Embedded directly inside Section 1!)
         try:
+            pdf.set_font('NotoSansTC', '', 9.5)
+            pdf.set_text_color(27, 94, 32)
+            pdf.cell(0, 6, '（二）填表張數、累積張數與組內共學對照趨勢圖', new_x='LMARGIN', new_y='NEXT')
+            pdf.ln(1)
+
             import matplotlib
             matplotlib.use('Agg')
             import matplotlib.pyplot as plt
@@ -313,22 +298,25 @@ def generate_student_w1_w10_pdf(group_name, member_id, member_name, all_data, we
             chart_weeks = [rec['week_code'] for rec in week_records]
             chart_weekly = [rec['sheets'] for rec in week_records]
             chart_cum = [rec['cum_sheets'] for rec in week_records]
+            chart_colearn = [rec['colearn'] for rec in week_records]
 
-            fig, ax1 = plt.subplots(figsize=(7.5, 3.0), dpi=200)
+            fig, ax1 = plt.subplots(figsize=(7.5, 3.2), dpi=200)
 
             color_bar = '#2E7D32' # 深綠 (當週填表張數)
-            color_line = '#1565C0' # 湛藍/海洋藍 (累積填表張數)
+            color_line = '#1565C0' # 海洋藍 (累積填表張數)
 
             bars = ax1.bar(chart_weeks, chart_weekly, color=color_bar, alpha=0.75, width=0.45, label='當週填表張數')
             ax1.set_ylabel('當週填表張數', color=color_bar, fontsize=9.5, fontweight='bold', fontproperties=my_font)
             ax1.tick_params(axis='y', labelcolor=color_bar)
             max_w = max(chart_weekly) if chart_weekly else 5
-            ax1.set_ylim(0, max_w + 2 if max_w > 0 else 5)
+            ax1.set_ylim(0, max_w + 2.2 if max_w > 0 else 5)
 
-            for bar in bars:
+            for i, bar in enumerate(bars):
                 h = bar.get_height()
                 if h > 0:
                     ax1.text(bar.get_x() + bar.get_width()/2., h + 0.1, f'{int(h)}張', ha='center', va='bottom', fontsize=8, color=color_bar, fontweight='bold', fontproperties=my_font)
+                if chart_colearn[i] == '是':
+                    ax1.text(bar.get_x() + bar.get_width()/2., 0.2, '○共學', ha='center', va='bottom', fontsize=7.5, color='#1B5E20', fontweight='bold', fontproperties=my_font, bbox=dict(boxstyle='round,pad=0.15', facecolor='#E8F5E9', edgecolor='#A5D6A7', alpha=0.9))
 
             ax2 = ax1.twinx()
             line = ax2.plot(chart_weeks, chart_cum, color=color_line, marker='o', linewidth=2, markersize=5, label='累積填表張數')
@@ -339,10 +327,9 @@ def generate_student_w1_w10_pdf(group_name, member_id, member_name, all_data, we
 
             for i, (w, val) in enumerate(zip(chart_weeks, chart_cum)):
                 if chart_weekly[i] > 0 or i == len(chart_weeks)-1:
-                    ax2.text(w, val + 0.6, f'{val}張', ha='center', va='bottom', fontsize=8, color=color_line, fontweight='bold', fontproperties=my_font)
+                    ax2.text(w, val + 0.5, f'{val}張', ha='center', va='bottom', fontsize=8, color=color_line, fontweight='bold', fontproperties=my_font)
 
-            plt.title('W1 ~ W10 個人填表張數與累積張數對照趨勢圖', fontsize=11, fontweight='bold', color='#1B5E20', fontproperties=my_font, pad=10)
-
+            plt.title('W1 ~ W10 個人填表張數、累積張數與組內共學出席對照趨勢圖', fontsize=10.5, fontweight='bold', color='#1B5E20', fontproperties=my_font, pad=10)
             ax1.spines['top'].set_visible(False)
             ax2.spines['top'].set_visible(False)
             ax1.grid(axis='y', linestyle='--', alpha=0.3)
@@ -352,89 +339,76 @@ def generate_student_w1_w10_pdf(group_name, member_id, member_name, all_data, we
             fig.savefig(chart_img_path, dpi=200, bbox_inches='tight')
             plt.close(fig)
 
-            # Embed Image in PDF
-            pdf.set_font('NotoSansTC', '', 11)
-            pdf.set_text_color(27, 94, 32)
-            pdf.cell(0, 7, '【二、W1 ~ W10 填表張數與累積張數對照趨勢圖】', new_x='LMARGIN', new_y='NEXT')
-            pdf.ln(1)
             pdf.image(chart_img_path, x=15, w=180)
-            pdf.ln(3)
+            pdf.ln(4)
         except Exception as e_chart:
             pass
 
-        # 💡 3. 各週組內共學出席與回報對照表 (直接位於填表統計圖下方)
+        # 2. 各週組內共學出席與回報對照表 (○✕表格)
         pdf.set_font('NotoSansTC', '', 11)
         pdf.set_text_color(27, 94, 32)
-        pdf.cell(0, 7, '【三、W1 ~ W10 各週組內共學出席與回報對照表】', new_x='LMARGIN', new_y='NEXT')
+        pdf.cell(0, 7, '【二、W1 ~ W10 各週組內共學出席與回報對照表】', new_x='LMARGIN', new_y='NEXT')
         pdf.ln(1)
 
-        pdf.set_font('NotoSansTC', '', 8.5)
+        pdf.set_font('NotoSansTC', '', 8)
         pdf.set_text_color(100, 100, 100)
         pdf.cell(0, 5, '註：『○』表示有出席組內共學；『X』表示當週有填報但未出席共學；空白表示當週未填報', new_x='LMARGIN', new_y='NEXT')
         pdf.ln(1)
 
-        # Table Layout (180mm Total Usable Width)
-        col_head_w = 26
-        col_wk_w = 12.5
-        col_tot_w = 29
+        col_w_label, col_w_wk, col_w_tot = 30, 13.5, 20
 
-        # Header Row
         pdf.set_fill_color(27, 94, 32)
         pdf.set_text_color(255, 255, 255)
-        pdf.set_font('NotoSansTC', '', 9)
+        pdf.set_font('NotoSansTC', '', 8.5)
 
-        pdf.cell(col_head_w, 7, '項目 \\ 週別', border=1, align='C', fill=True)
+        pdf.cell(col_w_label, 6.5, '項目 \\ 週別', border=1, align='C', fill=True)
         for rec in week_records:
-            pdf.cell(col_wk_w, 7, rec['week_code'], border=1, align='C', fill=True)
-        pdf.cell(col_tot_w, 7, '總出席次數', border=1, align='C', fill=True)
+            pdf.cell(col_w_wk, 6.5, rec['week_code'], border=1, align='C', fill=True)
+        pdf.cell(col_w_tot, 6.5, '總出席次數', border=1, align='C', fill=True)
         pdf.ln()
 
-        # Data Row 1: 組內共學出席
-        pdf.set_fill_color(245, 247, 245)
+        pdf.set_fill_color(255, 255, 255)
         pdf.set_font('NotoSansTC', '', 9)
         pdf.set_text_color(30, 30, 30)
-
-        pdf.cell(col_head_w, 7.5, '組內共學出席', border=1, align='C', fill=True)
+        pdf.cell(col_w_label, 6.5, '組內共學出席', border=1, align='C', fill=True)
 
         for rec in week_records:
             if rec['submitted']:
                 if rec['colearn'] == '是':
-                    pdf.set_text_color(46, 125, 50) # 深綠色 ○
-                    pdf.set_font('NotoSansTC', '', 10)
-                    pdf.cell(col_wk_w, 7.5, '○', border=1, align='C', fill=True)
+                    pdf.set_text_color(46, 125, 50)
+                    pdf.cell(col_w_wk, 6.5, '○', border=1, align='C', fill=True)
                 else:
-                    pdf.set_text_color(198, 40, 40) # 亮紅色 X
-                    pdf.set_font('NotoSansTC', '', 9.5)
-                    pdf.cell(col_wk_w, 7.5, 'X', border=1, align='C', fill=True)
+                    pdf.set_text_color(198, 40, 40)
+                    pdf.cell(col_w_wk, 6.5, 'X', border=1, align='C', fill=True)
             else:
-                pdf.set_text_color(30, 30, 30)
-                pdf.cell(col_wk_w, 7.5, '', border=1, align='C', fill=True)
+                pdf.cell(col_w_wk, 6.5, '', border=1, align='C', fill=True)
 
-        pdf.set_font('NotoSansTC', '', 9)
         pdf.set_text_color(27, 94, 32)
-        pdf.cell(col_tot_w, 7.5, f'{colearn_count} 次', border=1, align='C', fill=True)
+        pdf.set_font('NotoSansTC', '', 8.5)
+        pdf.cell(col_w_tot, 6.5, f'{colearn_count} 次', border=1, align='C', fill=True)
         pdf.ln()
 
-        # Data Row 2: 當週填報張數
-        pdf.set_fill_color(255, 255, 255)
+        pdf.set_fill_color(245, 247, 245)
         pdf.set_text_color(30, 30, 30)
-        pdf.cell(col_head_w, 7.5, '當週填報張數', border=1, align='C', fill=True)
+        pdf.set_font('NotoSansTC', '', 9)
+        pdf.cell(col_w_label, 6.5, '當週填表張數', border=1, align='C', fill=True)
 
         for rec in week_records:
             if rec['submitted']:
-                pdf.cell(col_wk_w, 7.5, f"{rec['sheets']}張", border=1, align='C', fill=True)
+                pdf.cell(col_w_wk, 6.5, f"{rec['sheets']}張", border=1, align='C', fill=True)
             else:
-                pdf.cell(col_wk_w, 7.5, '-', border=1, align='C', fill=True)
+                pdf.cell(col_w_wk, 6.5, '-', border=1, align='C', fill=True)
 
         pdf.set_text_color(27, 94, 32)
-        pdf.cell(col_tot_w, 7.5, f'{tot_sheets} 張', border=1, align='C', fill=True)
+        pdf.set_font('NotoSansTC', '', 8.5)
+        pdf.cell(col_w_tot, 6.5, f'{tot_sheets} 張', border=1, align='C', fill=True)
         pdf.ln()
-        pdf.ln(4)
-        
-        # 4. Detailed Weekly Reflections (W1 ~ W10)
+        pdf.ln(5)
+
+        # 3. 每週心得全文
         pdf.set_font('NotoSansTC', '', 11)
         pdf.set_text_color(27, 94, 32)
-        pdf.cell(0, 7, '【四、W1 ~ W10 每週心得與自我觀察紀錄全文】', new_x='LMARGIN', new_y='NEXT')
+        pdf.cell(0, 7, '【三、W1 ~ W10 每週心得與自我觀察紀錄全文】', new_x='LMARGIN', new_y='NEXT')
         pdf.ln(2)
         
         for rec in week_records:
@@ -451,7 +425,6 @@ def generate_student_w1_w10_pdf(group_name, member_id, member_name, all_data, we
                 
                 pdf.set_font('NotoSansTC', '', 9.5)
                 pdf.set_text_color(50, 50, 50)
-                
                 fb = rec['feedback']
                 pdf.ln(1)
                 if fb:
