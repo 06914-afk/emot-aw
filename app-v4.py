@@ -291,7 +291,10 @@ def generate_student_w1_w10_pdf(group_name, member_id, member_name, all_data, we
             import matplotlib.font_manager as fm
 
             my_font = fm.FontProperties(fname=font_path)
-            fm.fontManager.addfont(font_path)
+            try:
+                fm.fontManager.addfont(font_path)
+            except Exception:
+                pass
             plt.rcParams['font.sans-serif'] = [my_font.get_name(), 'DejaVu Sans']
             plt.rcParams['axes.unicode_minus'] = False
 
