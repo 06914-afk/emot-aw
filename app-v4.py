@@ -164,68 +164,84 @@ def generate_cross_week_matrix_docx(selected_weeks, all_data, groups_data):
     doc.save(bio)
     bio.seek(0)
     return bio.getvalue()
+
+
 def generate_student_w1_w10_pdf(group_name, member_id, member_name, all_data, weeks_list):
     if not HAS_FPDF:
         return None
     font_path = get_cjk_font_path()
     if not font_path or not os.path.exists(font_path):
         return None
-
+        
     try:
         pdf = FPDF(orientation='P', unit='mm', format='A4')
         pdf.add_font('NotoSansTC', '', font_path)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-
-        # 抬頭與基本資訊
+        
+        # Title
         pdf.set_font('NotoSansTC', '', 15)
         pdf.set_text_color(27, 94, 32)
         pdf.cell(0, 10, '園區情緒觀察營 - 個人 W1~W10 心得總結報告', new_x='LMARGIN', new_y='NEXT', align='C')
         pdf.ln(2)
-
+        
+        # Meta Info Box
         now_str = datetime.datetime.now(pytz.timezone('Asia/Taipei')).strftime('%Y/%m/%d %H:%M')
         pdf.set_font('NotoSansTC', '', 9.5)
         pdf.set_text_color(50, 50, 50)
         pdf.set_fill_color(245, 247, 245)
-
+        
         meta_str = f'組別：{group_name}    編號/姓名：{member_id} ({member_name})    統計範圍：W1 ~ W10    產出時間：{now_str}'
         pdf.cell(0, 8, meta_str, border=1, align='C', fill=True, new_x='LMARGIN', new_y='NEXT')
         pdf.ln(4)
-
+        
         target_weeks = weeks_list[:10]
-
-        # 1. 數據總覽表格
+        
+        # 1. Summary Table (W1~W10 Overview)
         pdf.set_font('NotoSansTC', '', 11)
         pdf.set_text_color(27, 94, 32)
         pdf.cell(0, 7, '【一、W1 ~ W10 回報張數與共學統計總覽】', new_x='LMARGIN', new_y='NEXT')
         pdf.ln(1)
-
+        
+        # Table Header
         pdf.set_fill_color(27, 94, 32)
         pdf.set_text_color(255, 255, 255)
         pdf.set_font('NotoSansTC', '', 9)
-
-        col_w_week, col_w_sheets, col_w_cum, col_w_colearn, col_w_status = 35, 35, 35, 35, 40
+        
+        col_w_week = 35
+        col_w_sheets = 35
+        col_w_cum = 35
+        col_w_colearn = 35
+        col_w_status = 40
+        
         pdf.cell(col_w_week, 7, '回報週別', border=1, align='C', fill=True)
         pdf.cell(col_w_sheets, 7, '當週填表張數', border=1, align='C', fill=True)
         pdf.cell(col_w_cum, 7, '累積填表張數', border=1, align='C', fill=True)
         pdf.cell(col_w_colearn, 7, '組內共學出席', border=1, align='C', fill=True)
         pdf.cell(col_w_status, 7, '填報狀態', border=1, align='C', fill=True)
         pdf.ln()
-
+        
         pdf.set_font('NotoSansTC', '', 9)
         pdf.set_text_color(30, 30, 30)
-
+        
         tot_sheets = 0
         colearn_count = 0
         submitted_weeks_count = 0
         week_records = []
-
+        
         for idx, wk_full in enumerate(target_weeks):
-            wk_code = wk_full.split(' (').strip()
-            u_rec = all_data[(all_data['組別'] == group_name) & (all_data['個人姓名'] == member_name) & (all_data['當週回報期間'] == wk_full)] if (not all_data.empty and '當週回報期間' in all_data.columns) else pd.DataFrame()
+            wk_code = wk_full.split(' (')[0].strip()
+            
+            if not all_data.empty and '當週回報期間' in all_data.columns:
+                u_rec = all_data[(all_data['組別'] == group_name) & 
+                                 (all_data['個人姓名'] == member_name) & 
+                                 (all_data['當週回報期間'] == wk_full)]
+            else:
+                u_rec = pd.DataFrame()
+                
             fill = (idx % 2 == 1)
             pdf.set_fill_color(245, 247, 245) if fill else pdf.set_fill_color(255, 255, 255)
-
+            
             if not u_rec.empty:
                 submitted_weeks_count += 1
                 row_data = u_rec.iloc[-1]
@@ -239,8 +255,13 @@ def generate_student_w1_w10_pdf(group_name, member_id, member_name, all_data, we
                 if fb_text in ['nan', 'None', '無', '尚無']:
                     fb_text = ''
                 week_records.append({
-                    'week_code': wk_code, 'week_full': wk_full, 'submitted': True,
-                    'sheets': sheets, 'cum_sheets': cum_sheets, 'colearn': co_learn_str, 'feedback': fb_text
+                    'week_code': wk_code,
+                    'week_full': wk_full,
+                    'submitted': True,
+                    'sheets': sheets,
+                    'cum_sheets': cum_sheets,
+                    'colearn': co_learn_str,
+                    'feedback': fb_text,
                 })
                 pdf.cell(col_w_week, 6.5, wk_code, border=1, align='C', fill=True)
                 pdf.cell(col_w_sheets, 6.5, f'{sheets} 張', border=1, align='C', fill=True)
@@ -250,8 +271,13 @@ def generate_student_w1_w10_pdf(group_name, member_id, member_name, all_data, we
                 pdf.ln()
             else:
                 week_records.append({
-                    'week_code': wk_code, 'week_full': wk_full, 'submitted': False,
-                    'sheets': 0, 'cum_sheets': tot_sheets, 'colearn': '否', 'feedback': ''
+                    'week_code': wk_code,
+                    'week_full': wk_full,
+                    'submitted': False,
+                    'sheets': 0,
+                    'cum_sheets': tot_sheets,
+                    'colearn': '否',
+                    'feedback': '',
                 })
                 pdf.cell(col_w_week, 6.5, wk_code, border=1, align='C', fill=True)
                 pdf.cell(col_w_sheets, 6.5, '0 張', border=1, align='C', fill=True)
@@ -259,7 +285,8 @@ def generate_student_w1_w10_pdf(group_name, member_id, member_name, all_data, we
                 pdf.cell(col_w_colearn, 6.5, '否', border=1, align='C', fill=True)
                 pdf.cell(col_w_status, 6.5, '未填報', border=1, align='C', fill=True)
                 pdf.ln()
-
+                
+        # Total Summary Row
         pdf.set_fill_color(225, 238, 226)
         pdf.set_font('NotoSansTC', '', 9)
         pdf.set_text_color(27, 94, 32)
@@ -271,7 +298,7 @@ def generate_student_w1_w10_pdf(group_name, member_id, member_name, all_data, we
         pdf.ln()
         pdf.ln(3)
 
-        # 2. 生成視覺化對照趨勢圖 (深綠長條 + 海洋藍折線)
+        # 💡 生成視覺化對照趨勢圖 (Matplotlib Chart Embedding)
         try:
             import matplotlib
             matplotlib.use('Agg')
@@ -287,10 +314,10 @@ def generate_student_w1_w10_pdf(group_name, member_id, member_name, all_data, we
             chart_weekly = [rec['sheets'] for rec in week_records]
             chart_cum = [rec['cum_sheets'] for rec in week_records]
 
-            fig, ax1 = plt.subplots(figsize=(7.5, 3.2), dpi=200)
+            fig, ax1 = plt.subplots(figsize=(7.5, 3.0), dpi=200)
 
             color_bar = '#2E7D32' # 深綠 (當週填表張數)
-            color_line = '#1565C0' # 海洋藍 (累積填表張數)
+            color_line = '#1565C0' # 湛藍/海洋藍 (累積填表張數)
 
             bars = ax1.bar(chart_weeks, chart_weekly, color=color_bar, alpha=0.75, width=0.45, label='當週填表張數')
             ax1.set_ylabel('當週填表張數', color=color_bar, fontsize=9.5, fontweight='bold', fontproperties=my_font)
@@ -315,6 +342,7 @@ def generate_student_w1_w10_pdf(group_name, member_id, member_name, all_data, we
                     ax2.text(w, val + 0.6, f'{val}張', ha='center', va='bottom', fontsize=8, color=color_line, fontweight='bold', fontproperties=my_font)
 
             plt.title('W1 ~ W10 個人填表張數與累積張數對照趨勢圖', fontsize=11, fontweight='bold', color='#1B5E20', fontproperties=my_font, pad=10)
+
             ax1.spines['top'].set_visible(False)
             ax2.spines['top'].set_visible(False)
             ax1.grid(axis='y', linestyle='--', alpha=0.3)
@@ -324,98 +352,106 @@ def generate_student_w1_w10_pdf(group_name, member_id, member_name, all_data, we
             fig.savefig(chart_img_path, dpi=200, bbox_inches='tight')
             plt.close(fig)
 
+            # Embed Image in PDF
             pdf.set_font('NotoSansTC', '', 11)
             pdf.set_text_color(27, 94, 32)
             pdf.cell(0, 7, '【二、W1 ~ W10 填表張數與累積張數對照趨勢圖】', new_x='LMARGIN', new_y='NEXT')
             pdf.ln(1)
             pdf.image(chart_img_path, x=15, w=180)
-            pdf.ln(4)
+            pdf.ln(3)
         except Exception as e_chart:
             pass
 
-        # 3. 各週組內共學出席與回報對照表 (○✕表格)
+        # 💡 3. 各週組內共學出席與回報對照表 (直接位於填表統計圖下方)
         pdf.set_font('NotoSansTC', '', 11)
         pdf.set_text_color(27, 94, 32)
         pdf.cell(0, 7, '【三、W1 ~ W10 各週組內共學出席與回報對照表】', new_x='LMARGIN', new_y='NEXT')
         pdf.ln(1)
 
-        pdf.set_font('NotoSansTC', '', 8)
+        pdf.set_font('NotoSansTC', '', 8.5)
         pdf.set_text_color(100, 100, 100)
         pdf.cell(0, 5, '註：『○』表示有出席組內共學；『X』表示當週有填報但未出席共學；空白表示當週未填報', new_x='LMARGIN', new_y='NEXT')
         pdf.ln(1)
 
-        col_w_label = 30
-        col_w_wk = 13.5
-        col_w_tot = 20
+        # Table Layout (180mm Total Usable Width)
+        col_head_w = 26
+        col_wk_w = 12.5
+        col_tot_w = 29
 
+        # Header Row
         pdf.set_fill_color(27, 94, 32)
         pdf.set_text_color(255, 255, 255)
-        pdf.set_font('NotoSansTC', '', 8.5)
+        pdf.set_font('NotoSansTC', '', 9)
 
-        pdf.cell(col_w_label, 6.5, '項目 \\ 週別', border=1, align='C', fill=True)
+        pdf.cell(col_head_w, 7, '項目 \\ 週別', border=1, align='C', fill=True)
         for rec in week_records:
-            pdf.cell(col_w_wk, 6.5, rec['week_code'], border=1, align='C', fill=True)
-        pdf.cell(col_w_tot, 6.5, '總出席次數', border=1, align='C', fill=True)
+            pdf.cell(col_wk_w, 7, rec['week_code'], border=1, align='C', fill=True)
+        pdf.cell(col_tot_w, 7, '總出席次數', border=1, align='C', fill=True)
         pdf.ln()
 
-        pdf.set_fill_color(255, 255, 255)
+        # Data Row 1: 組內共學出席
+        pdf.set_fill_color(245, 247, 245)
         pdf.set_font('NotoSansTC', '', 9)
         pdf.set_text_color(30, 30, 30)
-        pdf.cell(col_w_label, 6.5, '組內共學出席', border=1, align='C', fill=True)
+
+        pdf.cell(col_head_w, 7.5, '組內共學出席', border=1, align='C', fill=True)
 
         for rec in week_records:
             if rec['submitted']:
                 if rec['colearn'] == '是':
-                    pdf.set_text_color(46, 125, 50)
-                    pdf.cell(col_w_wk, 6.5, '○', border=1, align='C', fill=True)
+                    pdf.set_text_color(46, 125, 50) # 深綠色 ○
+                    pdf.set_font('NotoSansTC', '', 10)
+                    pdf.cell(col_wk_w, 7.5, '○', border=1, align='C', fill=True)
                 else:
-                    pdf.set_text_color(198, 40, 40)
-                    pdf.cell(col_w_wk, 6.5, 'X', border=1, align='C', fill=True)
+                    pdf.set_text_color(198, 40, 40) # 亮紅色 X
+                    pdf.set_font('NotoSansTC', '', 9.5)
+                    pdf.cell(col_wk_w, 7.5, 'X', border=1, align='C', fill=True)
             else:
-                pdf.cell(col_w_wk, 6.5, '', border=1, align='C', fill=True)
+                pdf.set_text_color(30, 30, 30)
+                pdf.cell(col_wk_w, 7.5, '', border=1, align='C', fill=True)
 
+        pdf.set_font('NotoSansTC', '', 9)
         pdf.set_text_color(27, 94, 32)
-        pdf.set_font('NotoSansTC', '', 8.5)
-        pdf.cell(col_w_tot, 6.5, f'{colearn_count} 次', border=1, align='C', fill=True)
+        pdf.cell(col_tot_w, 7.5, f'{colearn_count} 次', border=1, align='C', fill=True)
         pdf.ln()
 
-        pdf.set_fill_color(245, 247, 245)
+        # Data Row 2: 當週填報張數
+        pdf.set_fill_color(255, 255, 255)
         pdf.set_text_color(30, 30, 30)
-        pdf.set_font('NotoSansTC', '', 9)
-        pdf.cell(col_w_label, 6.5, '當週填表張數', border=1, align='C', fill=True)
+        pdf.cell(col_head_w, 7.5, '當週填報張數', border=1, align='C', fill=True)
 
         for rec in week_records:
             if rec['submitted']:
-                pdf.cell(col_w_wk, 6.5, f"{rec['sheets']}張", border=1, align='C', fill=True)
+                pdf.cell(col_wk_w, 7.5, f"{rec['sheets']}張", border=1, align='C', fill=True)
             else:
-                pdf.cell(col_w_wk, 6.5, '-', border=1, align='C', fill=True)
+                pdf.cell(col_wk_w, 7.5, '-', border=1, align='C', fill=True)
 
         pdf.set_text_color(27, 94, 32)
-        pdf.set_font('NotoSansTC', '', 8.5)
-        pdf.cell(col_w_tot, 6.5, f'{tot_sheets} 張', border=1, align='C', fill=True)
+        pdf.cell(col_tot_w, 7.5, f'{tot_sheets} 張', border=1, align='C', fill=True)
         pdf.ln()
-        pdf.ln(5)
-
-        # 4. 每週心得全文
+        pdf.ln(4)
+        
+        # 4. Detailed Weekly Reflections (W1 ~ W10)
         pdf.set_font('NotoSansTC', '', 11)
         pdf.set_text_color(27, 94, 32)
         pdf.cell(0, 7, '【四、W1 ~ W10 每週心得與自我觀察紀錄全文】', new_x='LMARGIN', new_y='NEXT')
         pdf.ln(2)
-
+        
         for rec in week_records:
             pdf.set_font('NotoSansTC', '', 10)
             wk_c = rec['week_code']
             wk_f = rec['week_full']
-            date_range = wk_f.split(' (').replace(' )', '') if ' (' in wk_f else ''
-
+            date_range = wk_f.split(' (')[1].replace(' )', '') if ' (' in wk_f else ''
+            
             if rec['submitted']:
                 pdf.set_fill_color(235, 245, 235)
                 pdf.set_text_color(27, 94, 32)
                 sub_header = f"{wk_c} ({date_range})  |  當週填表：{rec['sheets']} 張  |  累積：{rec['cum_sheets']} 張  |  組內共學：{rec['colearn']}"
                 pdf.cell(0, 7, sub_header, border=1, align='L', fill=True, new_x='LMARGIN', new_y='NEXT')
-
+                
                 pdf.set_font('NotoSansTC', '', 9.5)
                 pdf.set_text_color(50, 50, 50)
+                
                 fb = rec['feedback']
                 pdf.ln(1)
                 if fb:
@@ -430,7 +466,7 @@ def generate_student_w1_w10_pdf(group_name, member_id, member_name, all_data, we
                 sub_header = f"{wk_c} ({date_range})  |  （當週未填報）"
                 pdf.cell(0, 7, sub_header, border=1, align='L', fill=True, new_x='LMARGIN', new_y='NEXT')
                 pdf.ln(3)
-
+                
         return bytes(pdf.output())
     except Exception as e:
         return None
@@ -649,20 +685,6 @@ st.set_page_config(
 # Custom Styling
 st.markdown("""
 <style>
- /* 水彩暖粉金句卡片 */
-    .quote-box {
-        background-color: #FAF0F2 !important;
-        color: #4A2E35 !important;
-        padding: 14px 20px;
-        border-radius: 12px;
-        border-left: 6px solid #8D4E5B !important;
-        box-shadow: 2px 4px 15px rgba(141, 78, 91, 0.1);
-        margin-bottom: 20px;
-        font-size: 1.05rem;
-        font-weight: bold;
-        text-align: center;
-    }
-
     /* 徹底隱藏右上角選單、工具列與「View code」檢視按鈕 */
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
@@ -1024,6 +1046,48 @@ st.markdown("""
         color: #3E2723 !important;
     }
 
+
+    /* 🌸 徹底修正 st.info / stAlert 在任何主題或模式下呈現水彩暖粉底與深褐字，杜絕黑底與隱形字 */
+    div[data-testid="stAlert"],
+    div.stAlert,
+    div[kind="info"],
+    div[data-baseweb="notification"] {
+        background-color: #FAF0F2 !important;
+        color: #3E2723 !important;
+        border: 1px solid #E8C4CB !important;
+        border-left: 6px solid #8D4E5B !important;
+        border-radius: 12px !important;
+        box-shadow: 1px 3px 10px rgba(141, 78, 91, 0.1) !important;
+    }
+
+    div[data-testid="stAlert"] p,
+    div.stAlert p,
+    div[kind="info"] p,
+    div[data-baseweb="notification"] p,
+    div[data-testid="stAlert"] span,
+    div.stAlert span,
+    div[kind="info"] span,
+    div[data-baseweb="notification"] span,
+    div[data-testid="stAlert"] svg {
+        color: #3E2723 !important;
+        fill: #8D4E5B !important;
+        font-weight: 500 !important;
+    }
+
+    /* 暖心格言區塊 (.quote-box)：清新水彩柔綠/暖粉底色 + 高對比深褐字 */
+    .quote-box {
+        background-color: #FAF0F2 !important;
+        color: #4A2E35 !important;
+        padding: 16px 20px !important;
+        border-radius: 12px !important;
+        border-left: 6px solid #8D4E5B !important;
+        box-shadow: 2px 4px 15px rgba(141, 78, 91, 0.12) !important;
+        margin-bottom: 25px !important;
+        font-size: 1.08rem !important;
+        letter-spacing: 0.03em !important;
+        text-align: center !important;
+    }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -1073,7 +1137,7 @@ groups_data = {
     "第 7 組": {
         "leader": "陳定群",
         "members": [
-            "7-1 陳定群", "7-2 吳庭妤", "7-3 吳幸蓉", "7-4 林伶雯", "7-5 林美芳", "7-6 林靖芳", "7-7 徐續仁", "7-8 張靜娟", "7-9 蕭淑勻", "7-10 吳璧合", "7-11 陳淑芳", "7-12 黃金輝", "7-13 鄭秀娟", "7-14 鄭宜涵", "7-15 鄭斐文", "7-16 謝萬蒲", "7-17 魏媛真", "7-18 楊美蘭", "7-19 何佳珍", "7-20 陳雅雯", "7-21 童于釗", "7-22 劉乃禎", "7-23 林義勝"
+            "7-1 陳定群", "7-2 吳庭妤", "7-3 吳幸蓉", "7-4 林伶雯", "7-5 林美芳", "7-6 林靖芳", "7-7 徐續仁", "7-8 張靜娟", "7-9 蕭淑勻", "7-10 吳璧合", "7-11 陳淑芳", "7-12 黃金輝", "7-13 鄭秀娟", "7-14 鄭宜涵", "7-15 鄭斐文", "7-16 謝萬蒲", "7-17 魏暖真", "7-18 楊美蘭", "7-19 何佳珍", "7-20 陳雅雯", "7-21 童于釗", "7-22 劉乃禎", "7-23 林義勝"
         ]
     },
     "第 8 組": {
@@ -1145,27 +1209,11 @@ groups_data = {
     "第 19 組": {
         "leader": "温秉原",
         "members": [
-            "19-1 温秉原", "19-2 許瑋倫", "19-3 黃玲娟", "19-4 梁景婷", "19-5 許碧珍", "19-6 廖宜範", "19-7 林美惠", "19-8 蘇玉瓊", "19-9 顏雅惠", "19-10 楊惠娟", "19-11 鄧心蕙", "19-12 林慧紅", "19-13 朱運年", "19-14 郭水枝", "19-15 吳佩芸", "19-16 江麗均","19-17 彭翠琴"
+            "19-1 温秉原", "19-2 許瑋倫", "19-3 黃玲娟", "19-4 梁景婷", "19-5 許碧珍", "19-6 廖宜範", "19-7 林美惠", "19-8 蘇玉瓊", "19-9 顏雅惠", "19-10 楊惠娟", "19-11 鄧心蕙", "19-12 林慧紅", "19-13 朱運年", "19-14 郭水枝", "19-15 吳佩芸", "19-16 江麗均", "19-17 彭翠琴"
         ]
     }
 }
-# Fixed typos / mapping adjustments
-groups_data["第 1 組"]["members"][7] = "1-8 郭瓈灧"
-groups_data["第 11 組"]["members"][10] = "11-11 蘇相瑜"
-groups_data["第 11 組"]["members"][13] = "11-14 許東華"
 
-
-# Deduplicate members within each group
-for g, data in groups_data.items():
-    seen = set()
-    deduped_members = []
-    for m in data["members"]:
-        if m not in seen:
-            seen.add(m)
-            deduped_members.append(m)
-    groups_data[g]["members"] = deduped_members
-
-# 週回報期間選項 (1 ~ 40 週)
 weeks_list = [
     "W1 ( 2026/08/31 ~ 2026/09/05 )",
     "W2 ( 2026/09/06 ~ 2026/09/12 )",
@@ -1444,7 +1492,7 @@ def save_record(new_row, gas_url=""):
             return True, f"本機已儲存 (雲端連線異常)"
     return True, "成功"
 
-# Define passwords for group leaders (leader01 ~ leader18) and admin (admin2026)
+# Define passwords for group leaders (leader01 ~ leader19) and admin (admin2026)
 leader_passwords = {f"第 {i} 組": f"leader{i:02d}" for i in range(1, 20)}
 admin_password = "admin2026"
 
@@ -2429,6 +2477,48 @@ else:
         color: #3E2723 !important;
     }
 
+
+    /* 🌸 徹底修正 st.info / stAlert 在任何主題或模式下呈現水彩暖粉底與深褐字，杜絕黑底與隱形字 */
+    div[data-testid="stAlert"],
+    div.stAlert,
+    div[kind="info"],
+    div[data-baseweb="notification"] {
+        background-color: #FAF0F2 !important;
+        color: #3E2723 !important;
+        border: 1px solid #E8C4CB !important;
+        border-left: 6px solid #8D4E5B !important;
+        border-radius: 12px !important;
+        box-shadow: 1px 3px 10px rgba(141, 78, 91, 0.1) !important;
+    }
+
+    div[data-testid="stAlert"] p,
+    div.stAlert p,
+    div[kind="info"] p,
+    div[data-baseweb="notification"] p,
+    div[data-testid="stAlert"] span,
+    div.stAlert span,
+    div[kind="info"] span,
+    div[data-baseweb="notification"] span,
+    div[data-testid="stAlert"] svg {
+        color: #3E2723 !important;
+        fill: #8D4E5B !important;
+        font-weight: 500 !important;
+    }
+
+    /* 暖心格言區塊 (.quote-box)：清新水彩柔綠/暖粉底色 + 高對比深褐字 */
+    .quote-box {
+        background-color: #FAF0F2 !important;
+        color: #4A2E35 !important;
+        padding: 16px 20px !important;
+        border-radius: 12px !important;
+        border-left: 6px solid #8D4E5B !important;
+        box-shadow: 2px 4px 15px rgba(141, 78, 91, 0.12) !important;
+        margin-bottom: 25px !important;
+        font-size: 1.08rem !important;
+        letter-spacing: 0.03em !important;
+        text-align: center !important;
+    }
+
 </style>
     """, unsafe_allow_html=True)
 
@@ -2490,7 +2580,11 @@ if show_admin_login_screen:
 
 elif not is_authenticated:
     # 2. Student Questionnaire View (Ultra-clean, No st.form, Zero mobile confirmation alerts)
-    st.markdown('<div class="quote-box">我有一個身體，我有一個人身。 注視當下，就是向前。</div>', unsafe_allow_html=True)
+    st.markdown("""
+    <div class="quote-box">
+        🌸 <b>我有一個身體，我有一個人身。    注視當下，就是向前。</b>
+    </div>
+    """, unsafe_allow_html=True)
     
     st.subheader("組別與姓名")
     col1, col2 = st.columns(2)
@@ -2524,30 +2618,33 @@ elif not is_authenticated:
         
     if group_selected and name_selected:
         st.markdown(f'<div class="group-box">ℹ️ 您選取的是 <b>{group_selected}</b>，請確認已選擇編號為：<b>{auto_member_id} ({actual_name})</b></div>', unsafe_allow_html=True)
-    # 💡 學員個人 W1~W10 心得總結報告 PDF 導出按鈕
-        try:
-            df_student = load_data()
-            student_pdf_bytes = generate_student_w1_w10_pdf(
-                group_name=group_selected,
-                member_id=auto_member_id,
-                member_name=actual_name,
-                all_data=df_student,
-                weeks_list=weeks_list
-            )
-            if student_pdf_bytes:
-                st.download_button(
-                    label=f"📄 導出個人 W1~W10 心得總結報告 (.pdf) — {actual_name}",
-                    data=student_pdf_bytes,
-                    file_name=f"個人W1_W10心得總結報告_{group_selected}_{actual_name}.pdf",
-                    mime="application/pdf",
-                    key=f"download_student_w1_w10_pdf_{group_selected}_{auto_member_id}"
+        
+        # 💡 學員個人 W1~W10 心得總結報告 PDF 導出按鈕
+        if not HAS_FPDF:
+            st.caption("⚠️ 雲端環境尚未安裝 fpdf2 套件，請確保 GitHub 根目錄包含 requirements.txt 檔案。")
+        else:
+            try:
+                df_student = load_data()
+                student_pdf_bytes = generate_student_w1_w10_pdf(
+                    group_name=group_selected,
+                    member_id=auto_member_id,
+                    member_name=actual_name,
+                    all_data=df_student,
+                    weeks_list=weeks_list
                 )
-                st.caption("💡 點擊上方按鈕即可導出包含『組別、姓名、W1~W10 每週填表張數、累積張數與每週心得全文』之 PDF 報告。")
-        except Exception as e:
-            pass
-
-    
-    
+                if student_pdf_bytes:
+                    st.download_button(
+                        label=f"📄 導出個人 W1~W10 心得總結報告 (.pdf) — {actual_name}",
+                        data=student_pdf_bytes,
+                        file_name=f"個人W1_W10心得總結報告_{group_selected}_{actual_name}.pdf",
+                        mime="application/pdf",
+                        key=f"download_student_w1_w10_pdf_{group_selected}_{auto_member_id}"
+                    )
+                    st.caption("💡 點擊上方按鈕即可導出包含『組別、姓名、W1~W10 每週填表張數、累積張數與每週心得全文』之 PDF 報告。")
+                else:
+                    st.caption("💡 PDF 報告模組準備中，請確認已選擇正確的組別與姓名。")
+            except Exception as e:
+                st.caption(f"💡 PDF 報告生成提醒：{str(e)}")
     else:
         st.markdown('<div class="group-box">ℹ️ 請先選擇您的 <b>組別</b> 與 <b>姓名</b> 以進行填報</div>', unsafe_allow_html=True)
     
@@ -2587,7 +2684,49 @@ elif not is_authenticated:
                 color: #8D4E5B !important;
                 line-height: 1.6 !important;
             }
-        </style>
+        
+    /* 🌸 徹底修正 st.info / stAlert 在任何主題或模式下呈現水彩暖粉底與深褐字，杜絕黑底與隱形字 */
+    div[data-testid="stAlert"],
+    div.stAlert,
+    div[kind="info"],
+    div[data-baseweb="notification"] {
+        background-color: #FAF0F2 !important;
+        color: #3E2723 !important;
+        border: 1px solid #E8C4CB !important;
+        border-left: 6px solid #8D4E5B !important;
+        border-radius: 12px !important;
+        box-shadow: 1px 3px 10px rgba(141, 78, 91, 0.1) !important;
+    }
+
+    div[data-testid="stAlert"] p,
+    div.stAlert p,
+    div[kind="info"] p,
+    div[data-baseweb="notification"] p,
+    div[data-testid="stAlert"] span,
+    div.stAlert span,
+    div[kind="info"] span,
+    div[data-baseweb="notification"] span,
+    div[data-testid="stAlert"] svg {
+        color: #3E2723 !important;
+        fill: #8D4E5B !important;
+        font-weight: 500 !important;
+    }
+
+    /* 暖心格言區塊 (.quote-box)：清新水彩柔綠/暖粉底色 + 高對比深褐字 */
+    .quote-box {
+        background-color: #FAF0F2 !important;
+        color: #4A2E35 !important;
+        padding: 16px 20px !important;
+        border-radius: 12px !important;
+        border-left: 6px solid #8D4E5B !important;
+        box-shadow: 2px 4px 15px rgba(141, 78, 91, 0.12) !important;
+        margin-bottom: 25px !important;
+        font-size: 1.08rem !important;
+        letter-spacing: 0.03em !important;
+        text-align: center !important;
+    }
+
+</style>
         """, unsafe_allow_html=True)
         co_learn = st.checkbox("我有參加本週組內共學", value=False, key="student_co_learn")
         
