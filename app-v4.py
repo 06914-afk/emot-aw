@@ -649,6 +649,20 @@ st.set_page_config(
 # Custom Styling
 st.markdown("""
 <style>
+ /* 水彩暖粉金句卡片 */
+    .quote-box {
+        background-color: #FAF0F2 !important;
+        color: #4A2E35 !important;
+        padding: 14px 20px;
+        border-radius: 12px;
+        border-left: 6px solid #8D4E5B !important;
+        box-shadow: 2px 4px 15px rgba(141, 78, 91, 0.1);
+        margin-bottom: 20px;
+        font-size: 1.05rem;
+        font-weight: bold;
+        text-align: center;
+    }
+
     /* 徹底隱藏右上角選單、工具列與「View code」檢視按鈕 */
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
@@ -2476,7 +2490,7 @@ if show_admin_login_screen:
 
 elif not is_authenticated:
     # 2. Student Questionnaire View (Ultra-clean, No st.form, Zero mobile confirmation alerts)
-    st.info("我有一個身體，我有一個人身。    注視當下，就是向前。")
+    st.markdown('<div class="quote-box">我有一個身體，我有一個人身。 注視當下，就是向前。</div>', unsafe_allow_html=True)
     
     st.subheader("組別與姓名")
     col1, col2 = st.columns(2)
