@@ -335,7 +335,10 @@ def generate_student_w1_w10_pdf(group_name, member_id, member_name, all_data, we
             ax1.grid(axis='y', linestyle='--', alpha=0.3)
 
             plt.tight_layout()
-            chart_img_path = f'/workspace/scratch/student_chart_{member_id}.png'
+            import tempfile
+            temp_dir = tempfile.gettempdir()
+            safe_id = re.sub(r'[^\w\-]', '_', str(member_id))
+            chart_img_path = os.path.join(temp_dir, f'student_chart_{safe_id}.png')
             fig.savefig(chart_img_path, dpi=200, bbox_inches='tight')
             plt.close(fig)
 
