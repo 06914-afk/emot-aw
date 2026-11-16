@@ -2132,7 +2132,7 @@ def generate_docx_report(group_name, leader, week, submissions, roster_list):
     return bio
 
 # Helper to send a beautifully formatted confirmation email copy to students
-def send_email_copy(receiver_email, row_data):
+def send_email_copy(receiver_email, row_data, pdf_bytes=None, pdf_filename=None):
     # Check if SMTP details are in Secrets
     smtp_user = ""
     smtp_password = ""
@@ -2222,10 +2222,24 @@ def send_email_copy(receiver_email, row_data):
         </html>
         """
         
-        msg = MIMEText(html_content, "html", "utf-8")
-        msg["Subject"] = Header(subject, "utf-8")
-        msg["From"] = Header(f"情緒觀察營大組窗口 <{smtp_user}>", "utf-8")
-        msg["To"] = Header(receiver_email, "utf-8")
+        if pdf_bytes:
+            from email.mime.multipart import MIMEMultipart
+            from email.mime.application import MIMEApplication
+            msg = MIMEMultipart()
+            msg["Subject"] = Header(subject, "utf-8")
+            msg["From"] = Header(f"情緒觀察營大組窗口 <{smtp_user}>", "utf-8")
+            msg["To"] = Header(receiver_email, "utf-8")
+            msg.attach(MIMEText(html_content, "html", "utf-8"))
+            
+            fname = pdf_filename if pdf_filename else f"個人W1_W10心得總結報告_{row_data['個人姓名']}.pdf"
+            part = MIMEApplication(pdf_bytes, Name=fname)
+            part.add_header('Content-Disposition', 'attachment', filename=('utf-8', '', fname))
+            msg.attach(part)
+        else:
+            msg = MIMEText(html_content, "html", "utf-8")
+            msg["Subject"] = Header(subject, "utf-8")
+            msg["From"] = Header(f"情緒觀察營大組窗口 <{smtp_user}>", "utf-8")
+            msg["To"] = Header(receiver_email, "utf-8")
         
         # Connect to server
         if smtp_port == 465:
@@ -2237,7 +2251,10 @@ def send_email_copy(receiver_email, row_data):
         server.login(smtp_user, smtp_password)
         server.sendmail(smtp_user, [receiver_email], msg.as_string())
         server.quit()
-        return True, "且已自動將填報確認副本信寄送至您的信箱！"
+        if pdf_bytes:
+            return True, "且已自動將填報確認副本與個人前十週心得總結 PDF 報告寄送至您的信箱！"
+        else:
+            return True, "且已自動將填報確認副本信寄送至您的信箱！"
     except Exception as e:
         return False, f"填報已成功儲存，但發送確認郵件時發生錯誤: {str(e)}"
 
@@ -2725,6 +2742,7 @@ elif not is_authenticated:
         st.write("---")
         st.markdown('<div class="reminder-template" style="font-family: inherit; font-size: 1rem; line-height: 1.5;">💡 <b>溫馨提醒：</b>每週六晚上11:00為報截止，可養成習慣總結。麻煩組長在週日中午產生組內報告回傳給帶組法師。</div>', unsafe_allow_html=True)
         st.write("---")
+        send_summary_co = st.checkbox("請寄前十週總結給我 📩", key="send_summary_checkbox")
         student_email_val = st.text_input("📧 您的電子郵件 (選填，填寫後送出可自動收到填報確認信副本)", placeholder="username@gmail.com", key="student_email_input")
         
         submit_btn = st.button("提交問卷 📨", type="primary", key="student_submit_btn")
@@ -2732,6 +2750,8 @@ elif not is_authenticated:
         if submit_btn:
             if not group_selected or not name_selected:
                 st.error("⚠️ 請先選擇您的「組別」與「姓名」後再提交問卷！")
+            elif send_summary_co and not student_email_val.strip():
+                st.error("⚠️ 您已勾選『請寄前十週總結給我』，請務必填寫您的「電子郵件」信箱！")
             else:
                 email = student_email_val.strip() if student_email_val.strip() else f"{actual_name}@example.com"
             GENDER_MAP = {
@@ -3120,7 +3140,28 @@ elif not is_authenticated:
                 # Send email copy if actual email was entered
                 email_status_msg = ""
                 if student_email_val.strip() and "@" in student_email_val:
-                    email_success, email_msg = send_email_copy(student_email_val.strip(), new_row)
+                    student_pdf_data = None
+                    student_pdf_filename = None
+                    if send_summary_co:
+                        try:
+                            df_for_pdf = load_data()
+                            student_pdf_data = generate_student_w1_w10_pdf(
+                                group_name=group_selected,
+                                member_id=auto_member_id,
+                                member_name=actual_name,
+                                all_data=df_for_pdf,
+                                weeks_list=weeks_list
+                            )
+                            student_pdf_filename = f"個人W1_W10心得總結報告_{group_selected}_{actual_name}.pdf"
+                        except Exception as pdf_err:
+                            student_pdf_data = None
+                    
+                    email_success, email_msg = send_email_copy(
+                        receiver_email=student_email_val.strip(),
+                        row_data=new_row,
+                        pdf_bytes=student_pdf_data,
+                        pdf_filename=student_pdf_filename
+                    )
                     if email_success:
                         email_status_msg = f" 📨 {email_msg}"
                     else:
@@ -3141,35 +3182,7 @@ elif not is_authenticated:
                 st.session_state["last_submitted_grounding_methods"] = grounding_methods.strip() if grounding_methods.strip() else "無"
                 st.rerun()
 
-    # 💡 頁面最下方：學員個人 W1~W10 心得總結報告 PDF 導出專區
-    if group_selected and name_selected:
-        st.write("---")
-        st.markdown("### 📄 個人 W1~W10 心得總結報告導出專區")
-        if not HAS_FPDF:
-            st.caption("⚠️ 雲端環境尚未安裝 fpdf2 套件，請確保 GitHub 根目錄包含 requirements.txt 檔案。")
-        else:
-            try:
-                df_student = load_data()
-                student_pdf_bytes = generate_student_w1_w10_pdf(
-                    group_name=group_selected,
-                    member_id=auto_member_id,
-                    member_name=actual_name,
-                    all_data=df_student,
-                    weeks_list=weeks_list
-                )
-                if student_pdf_bytes:
-                    st.download_button(
-                        label=f"📄 導出個人 W1~W10 心得總結報告 (.pdf) — {actual_name}",
-                        data=student_pdf_bytes,
-                        file_name=f"個人W1_W10心得總結報告_{group_selected}_{actual_name}.pdf",
-                        mime="application/pdf",
-                        key=f"download_student_w1_w10_pdf_{group_selected}_{auto_member_id}"
-                    )
-                    st.caption("💡 點擊上方按鈕即可導出包含『組別、姓名、W1~W10 每週填表張數、累積張數、組內共學出席對照表與每週心得全文』之 PDF 報告。")
-                else:
-                    st.caption("💡 PDF 報告模組準備中，請確認已選擇正確的組別與姓名。")
-            except Exception as e:
-                st.caption(f"💡 PDF 報告生成提醒：{str(e)}")
+
 
     # Footer login expander for group leaders / admin
     st.write("---")
