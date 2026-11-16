@@ -3371,8 +3371,8 @@ https://emot-aw-ktu54azdnwg7qscoaxawew.streamlit.app/#990d8774
         st.write("---")
         
         # 5. Detailed Data for selected target week (💡 v35 調整：數據預覽放置下方，並支援視窗滾動條)
-        st.markdown(f"### 📋 {target_wk_label} 組員填報心得與提問清單")
-        st.caption("依據組員號碼順序排列，方便閱讀心得與對法師的提問")
+        st.markdown(f"### 📋 {target_wk_label} 組員填報數據統計清單")
+        st.caption("🔒 隱私保護說明：為保障學員個人隱私，組長後台預覽區僅提供填報張數與共學狀態統計，不顯示心得全文紀錄。")
         
         leader_df = target_wk_submissions.copy()
         if not leader_df.empty:
@@ -3391,7 +3391,7 @@ https://emot-aw-ktu54azdnwg7qscoaxawew.streamlit.app/#990d8774
             for col_name in ["最常出現的身體反應", "最常出現的情緒類別", "最常用的落地方式"]:
                 if col_name in leader_df.columns:
                     display_cols.append(col_name)
-            display_cols.extend(["心得或對法師提問", "時間戳記"])
+            display_cols.append("時間戳記")
             leader_df_display = leader_df[display_cols].set_index("個人編號")
             st.table(leader_df_display)
         else:
